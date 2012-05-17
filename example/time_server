@@ -1,0 +1,48 @@
+#!/usr/bin/env ruby
+#
+# A simple example showing how to use Einhorn's shared-socket
+# features. Einhorn translates the srv:(addr:port[,flags...]) spec in
+# the arg string into a file descriptor number.
+#
+# Invoke through Einhorn as
+#
+#     einhorn ./time_server srv:127.0.0.1:2345,r
+#
+# or, if you want to try out preloading:
+#
+#     einhorn -p ./time_server ./time_server srv:127.0.0.1:2345,r
+
+require 'rubygems'
+require 'einhorn/worker'
+
+def einhorn_main
+  puts "Called with #{ARGV.inspect}"
+
+  if ARGV.length != 1
+    raise "Need to call with a port spec as the first argument. Try running 'einhorn #{$0} srv:127.0.0.1:2345,r' and then running 'nc 127.0.0.1 2345'"
+  end
+
+  socket = Socket.for_fd(Integer(ARGV[0]))
+
+  # Came up successfully, so let's set up graceful handler and ACK the
+  # master.
+  Einhorn::Worker.graceful_shutdown do
+    puts "Goodbye from #{$$}"
+    exit(0)
+  end
+  Einhorn::Worker.ack!
+
+  # Real work happens here.
+  begin
+    while true
+      accepted, _ = socket.accept
+      accepted.write("[#{$$}] The current time is: #{Time.now}!\n")
+      accepted.close
+    end
+  rescue Exception
+  end
+end
+
+if $0 == __FILE__
+  einhorn_main
+end

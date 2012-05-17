@@ -1,0 +1,120 @@
+#!/usr/bin/env ruby
+require 'logger'
+require 'optparse'
+
+require 'readline'
+
+require 'rubygems'
+require 'einhorn'
+
+module Einhorn
+  class EinhornSH
+    def initialize(path_to_socket)
+      @path_to_socket = path_to_socket
+      reconnect
+    end
+
+    def run
+      puts "Enter 'help' if you're not sure what to do."
+      puts
+      puts 'Type "quit" or "exit" to quit at any time'
+
+      while line = Readline.readline('> ', true)
+        if ['quit', 'exit'].include?(line)
+          puts "Goodbye!"
+          return
+        end
+
+        begin
+          response = @client.command({'command' => line})
+        rescue Errno::EPIPE => e
+          puts "einhornsh: Error communicating with Einhorn: #{e} (#{e.class})"
+          puts "einhornsh: Attempting to reconnect..."
+          reconnect
+
+          retry
+        end
+        puts response['message']
+      end
+    end
+
+    def reconnect
+      begin
+        @client = Einhorn::Client.for_path(@path_to_socket)
+      rescue Errno::ENOENT => e
+        # TODO: The exit here is a biit of a layering violation.
+        puts <<EOF
+Could not connect to Einhorn master process:
+
+  #{e}
+
+HINT: Are you sure you are running an Einhorn master?  If so, you
+should pass einhornsh the cmd_name (-c argument) provided to Einhorn.
+EOF
+        exit(1)
+      end
+      ehlo
+    end
+
+    def ehlo
+      response = @client.command('command' => 'ehlo', 'user' => ENV['USER'])
+      puts response['message']
+    end
+  end
+end
+
+def main
+  options = {}
+  optparse = OptionParser.new do |opts|
+    opts.banner = "Usage: #{$0} [options] [cmd_name]
+
+Welcome to Einhornsh: the Einhorn shell.
+
+Pass the cmd_name of the Einhorn master you are connecting to either
+as a positional argument or using `-c`. If you're running your Einhorn
+with a `-d`, provide the same argument here."
+
+    opts.on('-h', '--help', 'Display this message') do
+      puts opts
+      exit(1)
+    end
+
+    opts.on('-c CMD_NAME', '--command-name CMD_NAME', 'Connect to the Einhorn master with this cmd_name') do |cmd_name|
+      options[:cmd_name] = cmd_name
+    end
+
+    opts.on('-d PATH', '--socket-path PATH', 'Path to the Einhorn command socket') do |path|
+      options[:socket_path] = path
+    end
+  end
+  optparse.parse!
+
+  if ARGV.length > 1
+    puts optparse
+    return 1
+  end
+
+  Signal.trap("INT") {puts; exit(0)}
+
+  path_to_socket = options[:socket_path]
+
+  unless path_to_socket
+    cmd_name = options[:cmd_name] || ARGV[0]
+    path_to_socket = Einhorn::Command::Interface.default_socket_path(cmd_name)
+  end
+
+  sh = Einhorn::EinhornSH.new(path_to_socket)
+  sh.run
+  return 0
+end
+
+# Would be nice if this could be loadable rather than always
+# executing, but when run under gem it's a bit hard to do so.
+if true # $0 == __FILE__
+  ret = main
+  begin
+    exit(ret)
+  rescue TypeError
+    exit(0)
+  end
+end
