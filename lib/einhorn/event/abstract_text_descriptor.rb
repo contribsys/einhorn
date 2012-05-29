@@ -46,7 +46,11 @@ module Einhorn::Event
           chunk = @socket.read_nonblock(1024)
         rescue Errno::EAGAIN
           break
-        rescue EOFError, Errno::EPIPE
+        rescue EOFError, Errno::EPIPE, Errno::ECONNRESET
+          close
+          break
+        rescue StandardError => e
+          log_error("Caught unrecognized error while reading from socket: #{e} (#{e.class})")
           close
           break
         else
@@ -72,7 +76,10 @@ module Einhorn::Event
         return if @closed
         written = @socket.write_nonblock(@write_buffer)
       rescue Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::EINTR
-      rescue Errno::EPIPE
+      rescue Errno::EPIPE, Errno::ECONNRESET
+        close
+      rescue StandardError => e
+        log_error("Caught unrecognized error while writing to socket: #{e} (#{e.class})")
         close
       else
         log_debug("wrote #{written} bytes")
