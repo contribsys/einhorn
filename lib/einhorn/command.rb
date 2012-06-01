@@ -143,6 +143,11 @@ module Einhorn
     end
 
     def self.reload
+      unless Einhorn::State.respawn
+        Einhorn.log_info("Not reloading einhorn because we're exiting")
+        return
+      end
+
       Einhorn.log_info("Reloading einhorn (#{Einhorn::TransientState.script_name})...")
 
       # In case there's anything lurking
