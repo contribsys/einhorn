@@ -68,6 +68,7 @@ module Einhorn
         :preloaded => false,
         :script_name => nil,
         :argv => [],
+        :environ => {},
         :has_outstanding_spinup_timer => false,
         :stateful => nil,
         # Holds references so that the GC doesn't go and close your sockets.

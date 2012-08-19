@@ -172,6 +172,10 @@ module Einhorn
 
       Einhorn::Event.uninit
 
+      # Reload the original environment
+      ENV.clear
+      ENV.update(Einhorn::TransientState.environ)
+
       exec [Einhorn::TransientState.script_name, Einhorn::TransientState.script_name], *(['--with-state-fd', read.fileno.to_s, '--'] + Einhorn::State.cmd)
     end
 
