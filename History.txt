@@ -1,0 +1,13 @@
+=== 0.4.0 2012-09-26
+
+* Switch the command-socket protocol from line-oriented JSON to
+  line-oriented YAML. If you've written your own client to communicate
+  with the einhorn command-socket, you will need to update it. (The
+  bundled einhorn/client is already updated.)
+* Have the 'state' command return a YAML'd state rather than a #pretty_inspect'd
+  state
+* Made einhornsh script-friendly
+* Switched over to address specification via -b option and environment variables;
+  deprecated but didn't remove old interface.
+* Allow einhorn to signal a given worker multiple times
+* Add 'signal' command to Einhornsh
