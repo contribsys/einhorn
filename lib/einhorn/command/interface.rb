@@ -279,7 +279,7 @@ EOF
     end
 
     command 'state', "Get a dump of Einhorn's current state" do
-      Einhorn::Command.dumpable_state.pretty_inspect
+      YAML.dump(Einhorn::Command.dumpable_state)
     end
 
     command 'reload', 'Reload Einhorn' do |conn, _|
