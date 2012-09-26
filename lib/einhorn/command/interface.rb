@@ -201,14 +201,13 @@ module Einhorn::Command
       if response.kind_of?(String)
         response = {'message' => response}
       end
-      message = pack_message(response)
-      conn.write(message)
+      Einhorn::Client::Transport.send_message(conn, response)
     end
 
     def self.generate_response(conn, command)
       begin
-        request = JSON.parse(command)
-      rescue JSON::ParserError => e
+        request = Einhorn::Client::Transport.deserialize_message(command)
+      rescue ArgumentError => e
         return {
           'message' => "Could not parse command: #{e}"
         }
@@ -232,17 +231,6 @@ module Einhorn::Command
       else
         conn.log_debug("Received unrecognized command: #{command.inspect}")
         return unrecognized_command(conn, request)
-      end
-    end
-
-    def self.pack_message(message_struct)
-      begin
-        JSON.generate(message_struct) + "\n"
-      rescue JSON::GeneratorError => e
-        response = {
-          'message' => "Error generating JSON message for #{message_struct.inspect} (this indicates a bug): #{e}"
-        }
-        JSON.generate(response) + "\n"
       end
     end
 

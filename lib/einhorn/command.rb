@@ -1,7 +1,6 @@
 require 'pp'
 require 'set'
 require 'tmpdir'
-require 'json'
 
 require 'einhorn/command/interface'
 

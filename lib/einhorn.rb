@@ -6,8 +6,6 @@ require 'socket'
 require 'tmpdir'
 require 'yaml'
 
-require 'rubygems'
-
 module Einhorn
   module AbstractState
     def default_state; raise NotImplementedError.new('Override in extended modules'); end

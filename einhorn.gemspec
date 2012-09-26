@@ -13,8 +13,7 @@ Gem::Specification.new do |gem|
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.name          = "einhorn"
   gem.require_paths = ["lib"]
-  # maybe swap out for YAML? Then don't need any gems.
-  gem.add_dependency('json')
+
   gem.add_development_dependency('shoulda')
   gem.add_development_dependency('mocha')
   gem.version       = Einhorn::VERSION

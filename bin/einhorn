@@ -78,6 +78,10 @@ run). Einhorn relies on file permissions to ensure that no malicious
 users can gain access. Run with a `-d DIRECTORY` to change the
 directory where the socket will live.
 
+Note that the command socket uses a line-oriented YAML protocol, and
+you should ensure you trust clients to send arbitrary YAML messages
+into your process.
+
 ### Seamless upgrades
 
 You can cause your code to be seamlessly reloaded by upgrading the
@@ -143,8 +147,8 @@ To use preloading, just give Einhorn a `-p PATH_TO_CODE`, and make
 sure you've defined an `einhorn_main` method.
 
 In order to maximize compatibility, we've worked to minimize Einhorn's
-dependencies. At the moment Einhorn imports 'rubygems' and 'json'. (If
-these turn out to be issues, we could probably find a workaround.)
+dependencies. It has no dependencies outside of the Ruby standard
+library.
 
 ### Command name
 
