@@ -1,3 +1,7 @@
+=== 0.4.1 2012-09-27
+
+* Handle a nil argument to Einhorn::Worker.socket
+
 === 0.4.0 2012-09-26
 
 * Switch the command-socket protocol from line-oriented JSON to

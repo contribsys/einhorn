@@ -78,12 +78,15 @@ module Einhorn
       true
     end
 
-    def self.socket(number=0)
+    def self.socket(number=nil)
+      number ||= 0
       fds = einhorn_fds
       fds ? fds[number] : nil
     end
 
-    def self.socket!(number=0)
+    def self.socket!(number=nil)
+      number ||= 0
+
       unless fds = einhorn_fds
         raise "No EINHORN_FDS provided in environment. Are you running under Einhorn?"
       end
