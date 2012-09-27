@@ -29,9 +29,17 @@ module Einhorn
 
       Einhorn::State.children.delete(pid)
 
+      # Unacked worker
+      if spec[:type] == :worker && !spec[:acked]
+        Einhorn::State.consecutive_deaths_before_ack += 1
+        extra = ' before it was ACKed'
+      else
+        extra = nil
+      end
+
       case type = spec[:type]
       when :worker
-        Einhorn.log_info("===> Exited worker #{pid.inspect}")
+        Einhorn.log_info("===> Exited worker #{pid.inspect}#{extra}")
       when :state_passer
         Einhorn.log_debug("===> Exited state passing process #{pid.inspect}")
       else
@@ -77,8 +85,15 @@ module Einhorn
         return
       end
 
+      if Einhorn::State.consecutive_deaths_before_ack > 0
+        extra = ", breaking the streak of #{Einhorn::State.consecutive_deaths_before_ack} consecutive unacked workers dying"
+      else
+        extra = nil
+      end
+      Einhorn::State.consecutive_deaths_before_ack = 0
+
       spec[:acked] = true
-      Einhorn.log_info("Up to #{Einhorn::WorkerPool.ack_count} / #{Einhorn::WorkerPool.ack_target} #{Einhorn::State.ack_mode[:type]} ACKs")
+      Einhorn.log_info("Up to #{Einhorn::WorkerPool.ack_count} / #{Einhorn::WorkerPool.ack_target} #{Einhorn::State.ack_mode[:type]} ACKs#{extra}")
       # Could call cull here directly instead, I believe.
       Einhorn::Event.break_loop
     end
@@ -322,14 +337,23 @@ module Einhorn
       return if Einhorn::TransientState.has_outstanding_spinup_timer
       return unless Einhorn::WorkerPool.missing_worker_count > 0
 
-      spinup_interval = Einhorn::State.config[:seconds]
+      # Exponentially backoff automated spinup if we're just having
+      # things die before ACKing
+      spinup_interval = Einhorn::State.config[:seconds] * (1.5 ** Einhorn::State.consecutive_deaths_before_ack)
       seconds_ago = (Time.now - Einhorn::State.last_spinup).to_f
 
       if seconds_ago > spinup_interval
-        Einhorn.log_debug("Last spinup was #{seconds_ago}s ago, and spinup_interval is #{spinup_interval}, so spinning up a new process")
+        msg = "Last spinup was #{seconds_ago}s ago, and spinup_interval is #{spinup_interval}s, so spinning up a new process"
+
+        if Einhorn::State.consecutive_deaths_before_ack > 0
+          Einhorn.log_info("#{msg} (there have been #{Einhorn::State.consecutive_deaths_before_ack} consecutive unacked worker deaths)")
+        else
+          Einhorn.log_debug(msg)
+        end
+
         spinup
       else
-        Einhorn.log_debug("Last spinup was #{seconds_ago}s ago, and spinup_interval is #{spinup_interval}, so not spinning up a new process")
+        Einhorn.log_debug("Last spinup was #{seconds_ago}s ago, and spinup_interval is #{spinup_interval}s, so not spinning up a new process")
       end
 
       Einhorn::TransientState.has_outstanding_spinup_timer = true

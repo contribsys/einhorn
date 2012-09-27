@@ -55,7 +55,8 @@ module Einhorn
         :command_socket_as_fd => false,
         :socket_path => nil,
         :pidfile => nil,
-        :lockfile => nil
+        :lockfile => nil,
+        :consecutive_deaths_before_ack => 0
       }
     end
   end
