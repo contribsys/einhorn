@@ -122,7 +122,7 @@ to the UNIX socket pointed to by the environment variable
 
 To make things even easier, you can pass a `-b` to Einhorn, in which
 case you just need to `write()` the above message to the open file
-descriptor pointed to by `EINHORN_FD`.
+descriptor pointed to by `EINHORN_SOCK_FD`.
 
 (See `lib/einhorn/worker.rb` for details of these and other socket
 discovery mechanisms.)
@@ -174,7 +174,7 @@ if true # $0 == __FILE__
   Einhorn::TransientState.environ = ENV.to_hash
 
   optparse = OptionParser.new do |opts|
-    opts.on('-b', '--command-socket-as-fd', 'Leave the command socket open as a file descriptor, passed in the EINHORN_FD environment variable. This allows your worker processes to ACK without needing to know where on the filesystem the command socket lives.') do
+    opts.on('-b', '--command-socket-as-fd', 'Leave the command socket open as a file descriptor, passed in the EINHORN_SOCK_FD environment variable. This allows your worker processes to ACK without needing to know where on the filesystem the command socket lives.') do
       Einhorn::State.command_socket_as_fd = true
     end
 

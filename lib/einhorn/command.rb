@@ -189,7 +189,7 @@ module Einhorn
           Einhorn::Event.close_all_for_worker
           Einhorn.set_argv(cmd, true)
 
-          pass_command_socket_info
+          prepare_child_environment
           einhorn_main
         end
       else
@@ -203,7 +203,7 @@ module Einhorn
           # cloexec on everything.
           Einhorn::Event.close_all_for_worker
 
-          pass_command_socket_info
+          prepare_child_environment
           exec [cmd[0], cmd[0]], *cmd[1..-1]
         end
       end
@@ -228,14 +228,14 @@ module Einhorn
       end
     end
 
-    def self.pass_command_socket_info
+    def self.prepare_child_environment
       # This is run from the child
       ENV['EINHORN_MASTER_PID'] = Process.ppid.to_s
       ENV['EINHORN_SOCK_PATH'] = Einhorn::Command::Interface.socket_path
       if Einhorn::State.command_socket_as_fd
         socket = UNIXSocket.open(Einhorn::Command::Interface.socket_path)
         Einhorn::TransientState.socket_handles << socket
-        ENV['EINHORN_FD'] = socket.fileno.to_s
+        ENV['EINHORN_SOCK_FD'] = socket.fileno.to_s
       end
     end
 
