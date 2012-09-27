@@ -185,6 +185,17 @@ if true # $0 == __FILE__
   Einhorn::TransientState.environ = ENV.to_hash
 
   optparse = OptionParser.new do |opts|
+    opts.on('-b ADDR', '--bind ADDR', 'Bind an address and add the corresponding FD to EINHORN_FDS') do |addr|
+      unless addr =~ /\A([^:]+):(\d+)((?:,\w+)*)\Z/
+        raise "Invalid value for #{addr.inspect}: bind address must be of the form address:port[,flags...]"
+      end
+
+      host = $1
+      port = Integer($2)
+      flags = $3.split(',').select {|flag| flag.length > 0}.map {|flag| flag.downcase}
+      Einhorn::State.bind << [host, port, flags]
+    end
+
     opts.on('-c CMD_NAME', '--command-name CMD_NAME', 'Set the command name in ps to this value') do |cmd_name|
       Einhorn::State.cmd_name = cmd_name
     end
