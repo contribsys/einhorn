@@ -9,14 +9,16 @@ class InterfaceTest < Test::Unit::TestCase
     should "call that command" do
       conn = stub(:log_debug => nil)
       conn.expects(:write).once.with do |message|
-        parsed = JSON.parse(message)
+        # Remove trailing newline
+        message = message[0...-1]
+        parsed = YAML.load(URI.unescape(message))
         parsed['message'] =~ /Welcome gdb/
       end
       request = {
         'command' => 'ehlo',
         'user' => 'gdb'
       }
-      Interface.process_command(conn, JSON.generate(request))
+      Interface.process_command(conn, YAML.dump(request))
     end
   end
 
@@ -27,7 +29,7 @@ class InterfaceTest < Test::Unit::TestCase
       request = {
         'command' => 'made-up',
       }
-      Interface.process_command(conn, JSON.generate(request))
+      Interface.process_command(conn, YAML.dump(request))
     end
   end
 
@@ -41,7 +43,7 @@ class InterfaceTest < Test::Unit::TestCase
         'pid' => 1234
       }
       Einhorn::Command.expects(:register_manual_ack).once.with(1234)
-      Interface.process_command(conn, JSON.generate(request))
+      Interface.process_command(conn, YAML.dump(request))
     end
   end
 end

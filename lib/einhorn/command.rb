@@ -1,7 +1,6 @@
 require 'pp'
 require 'set'
 require 'tmpdir'
-require 'json'
 
 require 'einhorn/command/interface'
 
@@ -30,9 +29,17 @@ module Einhorn
 
       Einhorn::State.children.delete(pid)
 
+      # Unacked worker
+      if spec[:type] == :worker && !spec[:acked]
+        Einhorn::State.consecutive_deaths_before_ack += 1
+        extra = ' before it was ACKed'
+      else
+        extra = nil
+      end
+
       case type = spec[:type]
       when :worker
-        Einhorn.log_info("===> Exited worker #{pid.inspect}")
+        Einhorn.log_info("===> Exited worker #{pid.inspect}#{extra}")
       when :state_passer
         Einhorn.log_debug("===> Exited state passing process #{pid.inspect}")
       else
@@ -78,13 +85,23 @@ module Einhorn
         return
       end
 
+      if Einhorn::State.consecutive_deaths_before_ack > 0
+        extra = ", breaking the streak of #{Einhorn::State.consecutive_deaths_before_ack} consecutive unacked workers dying"
+      else
+        extra = nil
+      end
+      Einhorn::State.consecutive_deaths_before_ack = 0
+
       spec[:acked] = true
-      Einhorn.log_info("Up to #{Einhorn::WorkerPool.ack_count} / #{Einhorn::WorkerPool.ack_target} #{Einhorn::State.ack_mode[:type]} ACKs")
+      Einhorn.log_info("Up to #{Einhorn::WorkerPool.ack_count} / #{Einhorn::WorkerPool.ack_target} #{Einhorn::State.ack_mode[:type]} ACKs#{extra}")
       # Could call cull here directly instead, I believe.
       Einhorn::Event.break_loop
     end
 
-    def self.signal_all(signal, children)
+    def self.signal_all(signal, children=nil, record=true)
+      children ||= Einhorn::WorkerPool.workers
+
+      signaled = []
       Einhorn.log_info("Sending #{signal} to #{children.inspect}")
 
       children.each do |child|
@@ -93,17 +110,22 @@ module Einhorn
           next
         end
 
-        if spec[:signaled].include?(child)
-          Einhorn.log_error("Not sending #{signal} to already-signaled child #{child.inspect}. The fact we tried this probably indicates a bug in Einhorn.")
-          next
+        if record
+          if spec[:signaled].include?(signal)
+            Einhorn.log_error("Re-sending #{signal} to already-signaled child #{child.inspect}. It may be slow to spin down, or it may be swallowing #{signal}s.")
+          end
+          spec[:signaled].add(signal)
         end
-        spec[:signaled].add(child)
 
         begin
           Process.kill(signal, child)
         rescue Errno::ESRCH
+        else
+          signaled << child
         end
       end
+
+      "Successfully sent #{signal}s to #{signaled.length} processes: #{signaled.inspect}"
     end
 
     def self.increment
@@ -118,7 +140,7 @@ module Einhorn
     def self.decrement
       if Einhorn::State.config[:number] <= 1
         output = "Can't decrease number of workers (already at #{Einhorn::State.config[:number]}).  Run kill #{$$} if you really want to kill einhorn."
-        $stderr.puts output
+        $stderr.puts(output)
         return output
       end
 
@@ -190,7 +212,7 @@ module Einhorn
           Einhorn::Event.close_all_for_worker
           Einhorn.set_argv(cmd, true)
 
-          pass_command_socket_info
+          prepare_child_environment
           einhorn_main
         end
       else
@@ -204,7 +226,7 @@ module Einhorn
           # cloexec on everything.
           Einhorn::Event.close_all_for_worker
 
-          pass_command_socket_info
+          prepare_child_environment
           exec [cmd[0], cmd[0]], *cmd[1..-1]
         end
       end
@@ -229,15 +251,19 @@ module Einhorn
       end
     end
 
-    def self.pass_command_socket_info
+    def self.prepare_child_environment
       # This is run from the child
       ENV['EINHORN_MASTER_PID'] = Process.ppid.to_s
       ENV['EINHORN_SOCK_PATH'] = Einhorn::Command::Interface.socket_path
       if Einhorn::State.command_socket_as_fd
         socket = UNIXSocket.open(Einhorn::Command::Interface.socket_path)
         Einhorn::TransientState.socket_handles << socket
-        ENV['EINHORN_FD'] = socket.fileno.to_s
+        ENV['EINHORN_SOCK_FD'] = socket.fileno.to_s
       end
+      # Try to match Upstart's internal support for space-separated FD
+      # lists. (I don't think anyone actually uses that functionality,
+      # but seems reasonable enough.)
+      ENV['EINHORN_FDS'] = Einhorn::State.bind_fds.map(&:to_s).join(' ')
     end
 
     def self.full_upgrade
@@ -260,6 +286,12 @@ module Einhorn
         Einhorn::State.upgrading = true
         Einhorn.log_info("Starting upgrade to #{Einhorn::State.version}...")
       end
+
+      # Reset this, since we've just upgraded to a new universe (I'm
+      # not positive this is the right behavior, but it's not
+      # obviously wrong.)
+      Einhorn::State.consecutive_deaths_before_ack = 0
+      Einhorn::State.last_upgraded = Time.now
 
       Einhorn::State.version += 1
       replenish_immediately
@@ -311,14 +343,23 @@ module Einhorn
       return if Einhorn::TransientState.has_outstanding_spinup_timer
       return unless Einhorn::WorkerPool.missing_worker_count > 0
 
-      spinup_interval = Einhorn::State.config[:seconds]
+      # Exponentially backoff automated spinup if we're just having
+      # things die before ACKing
+      spinup_interval = Einhorn::State.config[:seconds] * (1.5 ** Einhorn::State.consecutive_deaths_before_ack)
       seconds_ago = (Time.now - Einhorn::State.last_spinup).to_f
 
       if seconds_ago > spinup_interval
-        Einhorn.log_debug("Last spinup was #{seconds_ago}s ago, and spinup_interval is #{spinup_interval}, so spinning up a new process")
+        msg = "Last spinup was #{seconds_ago}s ago, and spinup_interval is #{spinup_interval}s, so spinning up a new process"
+
+        if Einhorn::State.consecutive_deaths_before_ack > 0
+          Einhorn.log_info("#{msg} (there have been #{Einhorn::State.consecutive_deaths_before_ack} consecutive unacked worker deaths)")
+        else
+          Einhorn.log_debug(msg)
+        end
+
         spinup
       else
-        Einhorn.log_debug("Last spinup was #{seconds_ago}s ago, and spinup_interval is #{spinup_interval}, so not spinning up a new process")
+        Einhorn.log_debug("Last spinup was #{seconds_ago}s ago, and spinup_interval is #{spinup_interval}s, so not spinning up a new process")
       end
 
       Einhorn::TransientState.has_outstanding_spinup_timer = true

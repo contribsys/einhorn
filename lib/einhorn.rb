@@ -6,8 +6,6 @@ require 'socket'
 require 'tmpdir'
 require 'yaml'
 
-require 'rubygems'
-
 module Einhorn
   module AbstractState
     def default_state; raise NotImplementedError.new('Override in extended modules'); end
@@ -40,6 +38,8 @@ module Einhorn
         :version => 0,
         :sockets => {},
         :orig_cmd => nil,
+        :bind => [],
+        :bind_fds => [],
         :cmd => nil,
         :script_name => nil,
         :respawn => true,
@@ -55,7 +55,9 @@ module Einhorn
         :command_socket_as_fd => false,
         :socket_path => nil,
         :pidfile => nil,
-        :lockfile => nil
+        :lockfile => nil,
+        :consecutive_deaths_before_ack => 0,
+        :last_upgraded => nil
       }
     end
   end
@@ -220,9 +222,19 @@ module Einhorn
     Einhorn::State.cmd_name ? "ruby #{Einhorn::State.cmd_name}" : Einhorn::State.orig_cmd.join(' ')
   end
 
+  def self.socketify_env!
+    Einhorn::State.bind.each do |host, port, flags|
+      fd = bind(host, port, flags)
+      Einhorn::State.bind_fds << fd
+    end
+  end
+
+  # This duplicates some code from the environment path, but is
+  # deprecated so that's ok.
   def self.socketify!(cmd)
     cmd.map! do |arg|
       if arg =~ /^(.*=|)srv:([^:]+):(\d+)((?:,\w+)*)$/
+        log_error("Using deprecated command-line configuration for Einhorn; should upgrade to the environment variable interface.")
         opt = $1
         host = $2
         port = $3
@@ -250,6 +262,7 @@ module Einhorn
       Einhorn::State.cmd = ARGV.dup
       # TODO: don't actually alter ARGV[0]?
       Einhorn::State.cmd[0] = which(Einhorn::State.cmd[0])
+      socketify_env!
       socketify!(Einhorn::State.cmd)
     end
 
