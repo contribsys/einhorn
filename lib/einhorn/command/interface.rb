@@ -340,9 +340,25 @@ EOF
       results.join("\n")
     end
 
-    command 'die' do
-      Einhorn::Command.signal_all("USR2", Einhorn::WorkerPool.workers)
+    command 'die', 'Send SIGNAL (default: SIGUSR2) to all workers, stop spawning new ones, and exit once all workers die (args: [SIGNAL])' do |conn, request|
+      # TODO: dedup this code with signal
+      args = request['args']
+      if message = validate_args(args)
+        next message
+      end
+
+      args = normalize_signals(args)
+
+      if message = validate_signals(args)
+        next message
+      end
+
+      signal = args[0] || "USR2"
+
+      response = Einhorn::Command.signal_all(signal, Einhorn::WorkerPool.workers)
       Einhorn::State.respawn = false
+
+      "Einhorn is going down! #{response}"
     end
 
     def self.validate_args(args)
