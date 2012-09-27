@@ -237,6 +237,10 @@ module Einhorn
         Einhorn::TransientState.socket_handles << socket
         ENV['EINHORN_SOCK_FD'] = socket.fileno.to_s
       end
+      # Try to match Upstart's internal support for space-separated FD
+      # lists. (I don't think anyone actually uses that functionality,
+      # but seems reasonable enough.)
+      ENV['EINHORN_FDS'] = Einhorn::State.bind_fds.map(&:to_s).join(' ')
     end
 
     def self.full_upgrade
