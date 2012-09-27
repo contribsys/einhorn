@@ -45,24 +45,23 @@ You can communicate your running Einhorn process via `einhornsh`:
 
 If your process is a server and listens on one or more sockets,
 Einhorn can open these sockets and pass them to the workers. You can
-specify the addresses to bind by setting the EINHORN_SRVS environment
-variable to an address or an array of addresses:
+specify the addresses to bind by passing one or more `-b ADDR`
+arguments:
 
-    EINHORN_SRVS=ADDR
-    EINHORN_SRVS=[ADDR, ADDR, ...]
+    einhorn -b 127.0.0.1:1234 my-command
+    einhorn -b 127.0.0.1:1234,r -b 127.0.0.1:1235 my-command
 
 Each address is specified as an ip/port pair, possibly accompanied by options:
 
     ADDR := (IP:PORT)[<,OPT>...]
 
-The opened file descriptors will be represented as an array in EINHORN_FDS:
+In the worker process, the opened file descriptors will be represented
+as a space-separated list of file descriptor numbers in the
+EINHORN_FDS environment variable (respecting the order that the `-b`
+options were provided in):
 
-    EINHORN_FDS = [FD]
-    EINHORN_FDS = [FD, FD, ...]
-
-Where each FD is the file descriptor number of the corresponding
-socket. If EINHORN_SRVS is a string, EINHORN_FDS will be a 1-element
-array.
+    EINHORN_FDS="6" # 127.0.0.1:1234
+    EINHORN_FDS="6 7" # 127.0.0.1:1234,r 127.0.0.1:1235
 
 Valid opts are:
 
@@ -71,11 +70,11 @@ Valid opts are:
 
 You can for example run:
 
-    $ EINHORN_SRVS=127.0.0.1:2345,r einhorn -m manual -n 4 example/time_server
+    $ einhorn -b 127.0.0.1:2345,r -m manual -n 4 -- example/time_server
 
 Which will run 4 copies of
 
-    EINHORN_FDS=[6] example/time_server
+    EINHORN_FDS=6 example/time_server
 
 Where file descriptor 6 is a server socket bound to `127.0.0.1:2345`
 and with `SO_REUSEADDR` set. It is then your application's job to
@@ -131,7 +130,7 @@ string
 to the UNIX socket pointed to by the environment variable
 `EINHORN_SOCK_PATH`. (Be sure to include a trailing newline.)
 
-To make things even easier, you can pass a `-b` to Einhorn, in which
+To make things even easier, you can pass a `-g` to Einhorn, in which
 case you just need to `write()` the above message to the open file
 descriptor pointed to by `EINHORN_SOCK_FD`.
 
