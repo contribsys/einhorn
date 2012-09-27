@@ -78,6 +78,31 @@ module Einhorn
       true
     end
 
+    def self.socket(number=0)
+      fds = einhorn_fds
+      fds ? fds[number] : nil
+    end
+
+    def self.socket!(number=0)
+      unless fds = einhorn_fds
+        raise "No EINHORN_FDS provided in environment. Are you running under Einhorn?"
+      end
+
+      unless number < fds.length
+        raise "Only #{fds.length} FDs available, but FD #{number} was requested"
+      end
+
+      fds[number]
+    end
+
+    def self.einhorn_fds
+      unless raw_fds = ENV['EINHORN_FDS']
+        return nil
+      end
+
+      raw_fds.split(' ').map {|fd| Integer(fd)}
+    end
+
     # Call this to handle graceful shutdown requests to your app.
     def self.graceful_shutdown(&blk)
       Signal.trap('USR2', &blk)
