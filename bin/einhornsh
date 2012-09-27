@@ -55,7 +55,7 @@ module Einhorn
         @client = Einhorn::Client.for_path(@path_to_socket)
       rescue Errno::ENOENT => e
         # TODO: The exit here is a biit of a layering violation.
-        Einhorn::EinhornSH.emit(<<EOF)
+        Einhorn::EinhornSH.emit(<<EOF, true)
 Could not connect to Einhorn master process:
 
   #{e}
