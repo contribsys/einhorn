@@ -321,7 +321,7 @@ EOF
       nil
     end
 
-    command 'signal', 'Send one or more signals to all workers' do |conn, request|
+    command 'signal', 'Send one or more signals to all workers (args: SIG1 [SIG2 ...])' do |conn, request|
       args = request['args']
       if message = validate_args(args)
         next message
@@ -338,6 +338,11 @@ EOF
       end
 
       results.join("\n")
+    end
+
+    command 'die' do
+      Einhorn::Command.signal_all("USR2", Einhorn::WorkerPool.workers)
+      Einhorn::State.respawn = false
     end
 
     def self.validate_args(args)
