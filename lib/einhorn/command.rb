@@ -93,8 +93,7 @@ module Einhorn
         end
 
         if spec[:signaled].include?(child)
-          Einhorn.log_error("Not sending #{signal} to already-signaled child #{child.inspect}. The fact we tried this probably indicates a bug in Einhorn.")
-          next
+          Einhorn.log_error("Re-sending #{signal} to already-signaled child #{child.inspect}. It may be slow to spin down, or it may be swallowing #{signal}s.")
         end
         spec[:signaled].add(child)
 
