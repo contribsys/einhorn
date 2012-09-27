@@ -116,7 +116,7 @@ module Einhorn
     def self.decrement
       if Einhorn::State.config[:number] <= 1
         output = "Can't decrease number of workers (already at #{Einhorn::State.config[:number]}).  Run kill #{$$} if you really want to kill einhorn."
-        $stderr.puts output
+        $stderr.puts(output)
         return output
       end
 
