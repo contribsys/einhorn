@@ -291,6 +291,7 @@ module Einhorn
       # not positive this is the right behavior, but it's not
       # obviously wrong.)
       Einhorn::State.consecutive_deaths_before_ack = 0
+      Einhorn::State.last_upgraded = Time.now
 
       Einhorn::State.version += 1
       replenish_immediately

@@ -56,7 +56,8 @@ module Einhorn
         :socket_path => nil,
         :pidfile => nil,
         :lockfile => nil,
-        :consecutive_deaths_before_ack => 0
+        :consecutive_deaths_before_ack => 0,
+        :last_upgraded => nil
       }
     end
   end

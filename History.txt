@@ -12,3 +12,4 @@
 * Allow einhorn to signal a given worker multiple times
 * Add 'signal' command to Einhornsh
 * Add exponential backoff to spinup if new processes are dying before being acked
+* Add last_upgraded field to State
