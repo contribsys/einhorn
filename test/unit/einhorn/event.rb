@@ -14,7 +14,7 @@ module Einhorn::Event
 end
 
 class EventTest < Test::Unit::TestCase
-  context "when run the event loop" do
+  context "when running the event loop" do
     setup do
       Einhorn::Event.reset
     end

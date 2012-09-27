@@ -38,8 +38,8 @@ module Einhorn
     #
     # @discovery: How to discover the master process's command socket.
     #   :env:        Discover the path from ENV['EINHORN_SOCK_PATH']
-    #   :fd:         Just use the file descriptor in ENV['EINHORN_FD'].
-    #                Must run the master with the -b flag. This is mostly
+    #   :fd:         Just use the file descriptor in ENV['EINHORN_SOCK_FD'].
+    #                Must run the master with the -g flag. This is mostly
     #                useful if you don't have a nice library like Einhorn::Worker.
     #                Then @arg being true causes the FD to be left open after ACK;
     #                otherwise it is closed.
@@ -57,7 +57,7 @@ module Einhorn
         socket = ENV['EINHORN_SOCK_PATH']
         client = Einhorn::Client.for_path(socket)
       when :fd
-        raise "No EINHORN_FD provided in environment. Did you run einhorn with the -b flag?" unless fd_str = ENV['EINHORN_FD']
+        raise "No EINHORN_SOCK_FD provided in environment. Did you run einhorn with the -g flag?" unless fd_str = ENV['EINHORN_SOCK_FD']
 
         fd = Integer(fd_str)
         client = Einhorn::Client.for_fd(fd)
@@ -76,6 +76,31 @@ module Einhorn
 
       client.close if close_after_use
       true
+    end
+
+    def self.socket(number=0)
+      fds = einhorn_fds
+      fds ? fds[number] : nil
+    end
+
+    def self.socket!(number=0)
+      unless fds = einhorn_fds
+        raise "No EINHORN_FDS provided in environment. Are you running under Einhorn?"
+      end
+
+      unless number < fds.length
+        raise "Only #{fds.length} FDs available, but FD #{number} was requested"
+      end
+
+      fds[number]
+    end
+
+    def self.einhorn_fds
+      unless raw_fds = ENV['EINHORN_FDS']
+        return nil
+      end
+
+      raw_fds.split(' ').map {|fd| Integer(fd)}
     end
 
     # Call this to handle graceful shutdown requests to your app.

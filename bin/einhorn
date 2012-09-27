@@ -44,15 +44,25 @@ You can communicate your running Einhorn process via `einhornsh`:
 ### Server sockets
 
 If your process is a server and listens on one or more sockets,
-Einhorn can open these sockets and pass them to the workers. Program
-arguments of the form
+Einhorn can open these sockets and pass them to the workers. You can
+specify the addresses to bind by passing one or more `-b ADDR`
+arguments:
 
-    srv:(IP:PORT)[<,OPT>...]
-    --MY-OPT=srv:(IP:PORT)[<,OPT>...]
+    einhorn -b 127.0.0.1:1234 my-command
+    einhorn -b 127.0.0.1:1234,r -b 127.0.0.1:1235 my-command
 
-Will be interpreted as a request to open a server socket bound to
-IP:PORT. The argument will be replaced with `FD` and `---MY-OPT=FD`,
-respectively, where `FD` is the file descriptor number of the socket.
+Each address is specified as an ip/port pair, possibly accompanied by options:
+
+    ADDR := (IP:PORT)[<,OPT>...]
+
+In the worker process, the opened file descriptors will be represented
+as a space-separated list of file descriptor numbers in the
+EINHORN_FDS environment variable (respecting the order that the `-b`
+options were provided in):
+
+    EINHORN_FDS="6" # 127.0.0.1:1234
+    EINHORN_FDS="6 7" # 127.0.0.1:1234,r 127.0.0.1:1235
+
 Valid opts are:
 
     r, so_reuseaddr: set SO_REUSEADDR on the server socket
@@ -60,11 +70,11 @@ Valid opts are:
 
 You can for example run:
 
-    $ einhorn -m manual -n 4 example/time_server srv:127.0.0.1:2345,r
+    $ einhorn -b 127.0.0.1:2345,r -m manual -n 4 -- example/time_server
 
 Which will run 4 copies of
 
-    example/time_server 6
+    EINHORN_FDS=6 example/time_server
 
 Where file descriptor 6 is a server socket bound to `127.0.0.1:2345`
 and with `SO_REUSEADDR` set. It is then your application's job to
@@ -77,6 +87,10 @@ Einhorn opens a UNIX socket to which you can send commands (run
 run). Einhorn relies on file permissions to ensure that no malicious
 users can gain access. Run with a `-d DIRECTORY` to change the
 directory where the socket will live.
+
+Note that the command socket uses a line-oriented YAML protocol, and
+you should ensure you trust clients to send arbitrary YAML messages
+into your process.
 
 ### Seamless upgrades
 
@@ -116,9 +130,9 @@ string
 to the UNIX socket pointed to by the environment variable
 `EINHORN_SOCK_PATH`. (Be sure to include a trailing newline.)
 
-To make things even easier, you can pass a `-b` to Einhorn, in which
+To make things even easier, you can pass a `-g` to Einhorn, in which
 case you just need to `write()` the above message to the open file
-descriptor pointed to by `EINHORN_FD`.
+descriptor pointed to by `EINHORN_SOCK_FD`.
 
 (See `lib/einhorn/worker.rb` for details of these and other socket
 discovery mechanisms.)
@@ -143,8 +157,8 @@ To use preloading, just give Einhorn a `-p PATH_TO_CODE`, and make
 sure you've defined an `einhorn_main` method.
 
 In order to maximize compatibility, we've worked to minimize Einhorn's
-dependencies. At the moment Einhorn imports 'rubygems' and 'json'. (If
-these turn out to be issues, we could probably find a workaround.)
+dependencies. It has no dependencies outside of the Ruby standard
+library.
 
 ### Command name
 
@@ -170,12 +184,18 @@ if true # $0 == __FILE__
   Einhorn::TransientState.environ = ENV.to_hash
 
   optparse = OptionParser.new do |opts|
-    opts.on('-b', '--command-socket-as-fd', 'Leave the command socket open as a file descriptor, passed in the EINHORN_FD environment variable. This allows your worker processes to ACK without needing to know where on the filesystem the command socket lives.') do
-      Einhorn::State.command_socket_as_fd = true
+    opts.on('-b ADDR', '--bind ADDR', 'Bind an address and add the corresponding FD to EINHORN_FDS') do |addr|
+      unless addr =~ /\A([^:]+):(\d+)((?:,\w+)*)\Z/
+        raise "Invalid value for #{addr.inspect}: bind address must be of the form address:port[,flags...]"
+      end
+
+      host = $1
+      port = Integer($2)
+      flags = $3.split(',').select {|flag| flag.length > 0}.map {|flag| flag.downcase}
+      Einhorn::State.bind << [host, port, flags]
     end
 
     opts.on('-c CMD_NAME', '--command-name CMD_NAME', 'Set the command name in ps to this value') do |cmd_name|
-      Einhorn::TransientState.stateful = false
       Einhorn::State.cmd_name = cmd_name
     end
 
@@ -191,6 +211,10 @@ if true # $0 == __FILE__
       Einhorn::State.lockfile = lockfile
     end
 
+    opts.on('-g', '--command-socket-as-fd', 'Leave the command socket open as a file descriptor, passed in the EINHORN_SOCK_FD environment variable. This allows your worker processes to ACK without needing to know where on the filesystem the command socket lives.') do
+      Einhorn::State.command_socket_as_fd = true
+    end
+
     opts.on('-h', '--help', 'Display this message') do
       opts.banner = Einhorn::Executable.einhorn_usage(true)
       puts opts
@@ -202,8 +226,6 @@ if true # $0 == __FILE__
     end
 
     opts.on('-l', '--backlog N', 'Connection backlog (assuming this is a server)') do |b|
-      raise "Cannot pass options if stateful" if Einhorn::TransientState.stateful
-      Einhorn::TransientState.stateful = false
       Einhorn::State.config[:backlog] = b.to_i
     end
 
@@ -228,13 +250,10 @@ if true # $0 == __FILE__
     end
 
     opts.on('-n', '--number N', 'Number of copies to spin up') do |n|
-      raise "Cannot pass options if stateful" if Einhorn::TransientState.stateful
-      Einhorn::TransientState.stateful = false
       Einhorn::State.config[:number] = n.to_i
     end
 
     opts.on('-p PATH', '--preload PATH', 'Load this code into memory, and fork but do not exec upon spawn. Must define an "einhorn_main" method') do |path|
-      Einhorn::TransientState.stateful = false
       Einhorn::State.path = path
     end
 
@@ -243,8 +262,6 @@ if true # $0 == __FILE__
     end
 
     opts.on('-s', '--seconds N', 'Number of seconds to wait until respawning') do |b|
-      raise "Cannot pass options if stateful" if Einhorn::TransientState.stateful
-      Einhorn::TransientState.stateful = false
       Einhorn::State.config[:seconds] = s.to_i
     end
 
@@ -253,9 +270,6 @@ if true # $0 == __FILE__
     end
 
     opts.on('--with-state-fd STATE', '[Internal option] With file descriptor containing state') do |fd|
-      raise "Cannot be stateful if options are passed" unless Einhorn::TransientState.stateful.nil?
-      Einhorn::TransientState.stateful = true
-
       read = IO.for_fd(Integer(fd))
       state = read.read
       read.close

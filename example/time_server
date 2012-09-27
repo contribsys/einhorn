@@ -1,28 +1,24 @@
 #!/usr/bin/env ruby
 #
 # A simple example showing how to use Einhorn's shared-socket
-# features. Einhorn translates the srv:(addr:port[,flags...]) spec in
-# the arg string into a file descriptor number.
+# features. Einhorn translates the (addr:port[,flags...]) bind spec in
+# into a file descriptor number in the EINHORN_FDS environment variable.
 #
 # Invoke through Einhorn as
 #
-#     einhorn ./time_server srv:127.0.0.1:2345,r
+#     einhorn -b 127.0.0.1:2345,r ./time_server
 #
 # or, if you want to try out preloading:
 #
-#     einhorn -p ./time_server ./time_server srv:127.0.0.1:2345,r
-
+#     einhorn -b 127.0.0.1:2345,r -p ./time_server ./time_server
 require 'rubygems'
 require 'einhorn/worker'
 
 def einhorn_main
-  puts "Called with #{ARGV.inspect}"
+  puts "Called with ENV['EINHORN_FDS']: #{ENV['EINHORN_FDS']}"
 
-  if ARGV.length != 1
-    raise "Need to call with a port spec as the first argument. Try running 'einhorn #{$0} srv:127.0.0.1:2345,r' and then running 'nc 127.0.0.1 2345'"
-  end
-
-  socket = Socket.for_fd(Integer(ARGV[0]))
+  fd_num = Einhorn::Worker.socket!
+  socket = Socket.for_fd(fd_num)
 
   # Came up successfully, so let's set up graceful handler and ACK the
   # master.

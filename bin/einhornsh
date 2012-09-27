@@ -3,6 +3,7 @@ require 'logger'
 require 'optparse'
 
 require 'readline'
+require 'shellwords'
 
 require 'rubygems'
 require 'einhorn'
@@ -15,27 +16,38 @@ module Einhorn
     end
 
     def run
-      puts "Enter 'help' if you're not sure what to do."
-      puts
-      puts 'Type "quit" or "exit" to quit at any time'
+      emit("Enter 'help' if you're not sure what to do.")
+      emit
+      emit('Type "quit" or "exit" to quit at any time')
 
       while line = Readline.readline('> ', true)
-        if ['quit', 'exit'].include?(line)
-          puts "Goodbye!"
+        command, args = parse_command(line)
+        if ['quit', 'exit'].include?(command)
+          emit("Goodbye!")
           return
         end
 
         begin
-          response = @client.command({'command' => line})
+          response = @client.command({'command' => command, 'args' => args})
         rescue Errno::EPIPE => e
-          puts "einhornsh: Error communicating with Einhorn: #{e} (#{e.class})"
-          puts "einhornsh: Attempting to reconnect..."
+          emit("einhornsh: Error communicating with Einhorn: #{e} (#{e.class})")
+          emit("einhornsh: Attempting to reconnect...")
           reconnect
 
           retry
         end
-        puts response['message']
+
+        if response.kind_of?(Hash)
+          puts response['message']
+        else
+          puts "Invalid response type #{response.class}: #{response.inspect}"
+        end
       end
+    end
+
+    def parse_command(line)
+      command, *args = Shellwords.shellsplit(line)
+      [command, args]
     end
 
     def reconnect
@@ -43,7 +55,7 @@ module Einhorn
         @client = Einhorn::Client.for_path(@path_to_socket)
       rescue Errno::ENOENT => e
         # TODO: The exit here is a biit of a layering violation.
-        puts <<EOF
+        Einhorn::EinhornSH.emit(<<EOF, true)
 Could not connect to Einhorn master process:
 
   #{e}
@@ -53,12 +65,28 @@ should pass einhornsh the cmd_name (-c argument) provided to Einhorn.
 EOF
         exit(1)
       end
-      ehlo
+      ehlo if interactive?
     end
 
     def ehlo
       response = @client.command('command' => 'ehlo', 'user' => ENV['USER'])
-      puts response['message']
+      emit(response['message'])
+    end
+
+    def self.emit(message=nil, force=false)
+      $stderr.puts(message || '') if interactive? || force
+    end
+
+    def self.interactive?
+      $stdin.isatty
+    end
+
+    def emit(*args)
+      self.class.emit(*args)
+    end
+
+    def interactive?
+      self.class.interactive?
     end
   end
 end
@@ -75,7 +103,7 @@ as a positional argument or using `-c`. If you're running your Einhorn
 with a `-d`, provide the same argument here."
 
     opts.on('-h', '--help', 'Display this message') do
-      puts opts
+      Einhorn::EinhornSH.emit(opts, true)
       exit(1)
     end
 
@@ -90,11 +118,14 @@ with a `-d`, provide the same argument here."
   optparse.parse!
 
   if ARGV.length > 1
-    puts optparse
+    Einhorn::EinhornSH.emit(optparse, true)
     return 1
   end
 
-  Signal.trap("INT") {puts; exit(0)}
+  Signal.trap("INT") do
+    Einhorn::EinhornSH.emit
+    exit(0)
+  end
 
   path_to_socket = options[:socket_path]
 

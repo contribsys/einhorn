@@ -28,8 +28,10 @@ end
 def einhorn_main
   puts "Called with #{ARGV.inspect}"
 
-  if ARGV.length == 0
-    raise "Need to call with at least one argument. Try running 'einhorn #{$0} srv:127.0.0.1:5000,r,n srv:127.0.0.1:5001,r,n' and then running 'curl 127.0.0.1:5000' or 'curl 127.0.0.1:5001'"
+  einhorn_fds = Einhorn::Worker.einhorn_fds
+
+  unless einhorn_fds
+    raise "Need to call with at least one bound socket. Try running 'einhorn -b 127.0.0.1:5000,r,n -b 127.0.0.1:5001,r,n #{$0}' and then running 'curl 127.0.0.1:5000' or 'curl 127.0.0.1:5001'"
   end
 
   Einhorn::Worker.graceful_shutdown do
@@ -39,8 +41,7 @@ def einhorn_main
   Einhorn::Worker.ack!
 
   EventMachine.run do
-    ARGV.each_with_index do |arg, i|
-      sock = Integer(arg)
+    einhorn_fds.each_with_index do |sock, i|
       srv = Thin::Server.new(sock, App.new(i), :reuse => true)
       srv.start
     end

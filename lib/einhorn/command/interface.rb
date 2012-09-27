@@ -148,17 +148,17 @@ module Einhorn::Command
     ## Signals
     def self.install_handlers
       Signal.trap("INT") do
-        Einhorn::Command.signal_all("USR2", Einhorn::State.children.keys)
+        Einhorn::Command.signal_all("USR2", Einhorn::WorkerPool.workers)
         Einhorn::State.respawn = false
       end
       Signal.trap("TERM") do
-        Einhorn::Command.signal_all("TERM", Einhorn::State.children.keys)
+        Einhorn::Command.signal_all("TERM", Einhorn::WorkerPool.workers)
         Einhorn::State.respawn = false
       end
       # Note that quit is a bit different, in that it will actually
       # make Einhorn quit without waiting for children to exit.
       Signal.trap("QUIT") do
-        Einhorn::Command.signal_all("QUIT", Einhorn::State.children.keys)
+        Einhorn::Command.signal_all("QUIT", Einhorn::WorkerPool.workers)
         Einhorn::State.respawn = false
         exit(1)
       end
@@ -166,12 +166,12 @@ module Einhorn::Command
       Signal.trap("ALRM") {Einhorn::Command.full_upgrade}
       Signal.trap("CHLD") {Einhorn::Event.break_loop}
       Signal.trap("USR2") do
-        Einhorn::Command.signal_all("USR2", Einhorn::State.children.keys)
+        Einhorn::Command.signal_all("USR2", Einhorn::WorkerPool.workers)
         Einhorn::State.respawn = false
       end
       at_exit do
         if Einhorn::State.kill_children_on_exit && Einhorn::TransientState.whatami == :master
-          Einhorn::Command.signal_all("USR2", Einhorn::State.children.keys)
+          Einhorn::Command.signal_all("USR2", Einhorn::WorkerPool.workers)
           Einhorn::State.respawn = false
         end
       end
@@ -201,14 +201,13 @@ module Einhorn::Command
       if response.kind_of?(String)
         response = {'message' => response}
       end
-      message = pack_message(response)
-      conn.write(message)
+      Einhorn::Client::Transport.send_message(conn, response)
     end
 
     def self.generate_response(conn, command)
       begin
-        request = JSON.parse(command)
-      rescue JSON::ParserError => e
+        request = Einhorn::Client::Transport.deserialize_message(command)
+      rescue ArgumentError => e
         return {
           'message' => "Could not parse command: #{e}"
         }
@@ -232,17 +231,6 @@ module Einhorn::Command
       else
         conn.log_debug("Received unrecognized command: #{command.inspect}")
         return unrecognized_command(conn, request)
-      end
-    end
-
-    def self.pack_message(message_struct)
-      begin
-        JSON.generate(message_struct) + "\n"
-      rescue JSON::GeneratorError => e
-        response = {
-          'message' => "Error generating JSON message for #{message_struct.inspect} (this indicates a bug): #{e}"
-        }
-        JSON.generate(response) + "\n"
       end
     end
 
@@ -291,7 +279,7 @@ EOF
     end
 
     command 'state', "Get a dump of Einhorn's current state" do
-      Einhorn::Command.dumpable_state.pretty_inspect
+      YAML.dump(Einhorn::Command.dumpable_state)
     end
 
     command 'reload', 'Reload Einhorn' do |conn, _|
@@ -331,6 +319,75 @@ EOF
       # This or may not return
       Einhorn::Command.full_upgrade
       nil
+    end
+
+    command 'signal', 'Send one or more signals to all workers (args: SIG1 [SIG2 ...])' do |conn, request|
+      args = request['args']
+      if message = validate_args(args)
+        next message
+      end
+
+      args = normalize_signals(args)
+
+      if message = validate_signals(args)
+        next message
+      end
+
+      results = args.map do |signal|
+        Einhorn::Command.signal_all(signal, nil, false)
+      end
+
+      results.join("\n")
+    end
+
+    command 'die', 'Send SIGNAL (default: SIGUSR2) to all workers, stop spawning new ones, and exit once all workers die (args: [SIGNAL])' do |conn, request|
+      # TODO: dedup this code with signal
+      args = request['args']
+      if message = validate_args(args)
+        next message
+      end
+
+      args = normalize_signals(args)
+
+      if message = validate_signals(args)
+        next message
+      end
+
+      signal = args[0] || "USR2"
+
+      response = Einhorn::Command.signal_all(signal, Einhorn::WorkerPool.workers)
+      Einhorn::State.respawn = false
+
+      "Einhorn is going down! #{response}"
+    end
+
+    def self.validate_args(args)
+      return 'No args provided' unless args
+      return 'Args must be an array' unless args.kind_of?(Array)
+
+      args.each do |arg|
+        return "Argument is a #{arg.class}, not a string: #{arg.inspect}" unless arg.kind_of?(String)
+      end
+
+      nil
+    end
+
+    def self.validate_signals(args)
+      args.each do |signal|
+        unless Signal.list.include?(signal)
+          return "Invalid signal: #{signal.inspect}"
+        end
+      end
+
+      nil
+    end
+
+    def self.normalize_signals(args)
+      args.map do |signal|
+        signal = signal.upcase
+        signal = $1 if signal =~ /\ASIG(.*)\Z/
+        signal
+      end
     end
   end
 end
