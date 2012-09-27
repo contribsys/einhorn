@@ -68,15 +68,25 @@ You can communicate your running Einhorn process via `einhornsh`:
 ### Server sockets
 
 If your process is a server and listens on one or more sockets,
-Einhorn can open these sockets and pass them to the workers. Program
-arguments of the form
+Einhorn can open these sockets and pass them to the workers. You can
+specify the addresses to bind by passing one or more `-b ADDR`
+arguments:
 
-    srv:(IP:PORT)[<,OPT>...]
-    --MY-OPT=srv:(IP:PORT)[<,OPT>...]
+    einhorn -b 127.0.0.1:1234 my-command
+    einhorn -b 127.0.0.1:1234,r -b 127.0.0.1:1235 my-command
 
-Will be interpreted as a request to open a server socket bound to
-IP:PORT. The argument will be replaced with `FD` and `---MY-OPT=FD`,
-respectively, where `FD` is the file descriptor number of the socket.
+Each address is specified as an ip/port pair, possibly accompanied by options:
+
+    ADDR := (IP:PORT)[<,OPT>...]
+
+In the worker process, the opened file descriptors will be represented
+as a space-separated list of file descriptor numbers in the
+EINHORN_FDS environment variable (respecting the order that the `-b`
+options were provided in):
+
+    EINHORN_FDS="6" # 127.0.0.1:1234
+    EINHORN_FDS="6 7" # 127.0.0.1:1234,r 127.0.0.1:1235
+
 Valid opts are:
 
     r, so_reuseaddr: set SO_REUSEADDR on the server socket
@@ -84,11 +94,11 @@ Valid opts are:
 
 You can for example run:
 
-    $ einhorn -m manual -n 4 example/time_server srv:127.0.0.1:2345,r
+    $ einhorn -b 127.0.0.1:2345,r -m manual -n 4 -- example/time_server
 
 Which will run 4 copies of
 
-    example/time_server 6
+    EINHORN_FDS=6 example/time_server
 
 Where file descriptor 6 is a server socket bound to `127.0.0.1:2345`
 and with `SO_REUSEADDR` set. It is then your application's job to
@@ -144,9 +154,9 @@ string
 to the UNIX socket pointed to by the environment variable
 `EINHORN_SOCK_PATH`. (Be sure to include a trailing newline.)
 
-To make things even easier, you can pass a `-b` to Einhorn, in which
+To make things even easier, you can pass a `-g` to Einhorn, in which
 case you just need to `write()` the above message to the open file
-descriptor pointed to by `EINHORN_FD`.
+descriptor pointed to by `EINHORN_SOCK_FD`.
 
 (See `lib/einhorn/worker.rb` for details of these and other socket
 discovery mechanisms.)
@@ -181,11 +191,12 @@ pass `-c <name>`.
 
 ### Options
 
-    -b, --command-socket-as-fd       Leave the command socket open as a file descriptor, passed in the EINHORN_FD environment variable. This allows your worker processes to ACK without needing to know where on the filesystem the command socket lives.
+    -b, --bind ADDR                  Bind an address and add the corresponding FD to EINHORN_FDS
     -c, --command-name CMD_NAME      Set the command name in ps to this value
     -d, --socket-path PATH           Where to open the Einhorn command socket
     -e, --pidfile PIDFILE            Where to write out the Einhorn pidfile
     -f, --lockfile LOCKFILE          Where to store the Einhorn lockfile
+    -g, --command-socket-as-fd       Leave the command socket open as a file descriptor, passed in the EINHORN_SOCK_FD environment variable. This allows your worker processes to ACK without needing to know where on the filesystem the command socket lives.
     -h, --help                       Display this message
     -k, --kill-children-on-exit      If Einhorn exits unexpectedly, gracefully kill all its children
     -l, --backlog N                  Connection backlog (assuming this is a server)
