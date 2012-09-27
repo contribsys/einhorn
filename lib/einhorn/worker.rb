@@ -39,7 +39,7 @@ module Einhorn
     # @discovery: How to discover the master process's command socket.
     #   :env:        Discover the path from ENV['EINHORN_SOCK_PATH']
     #   :fd:         Just use the file descriptor in ENV['EINHORN_SOCK_FD'].
-    #                Must run the master with the -b flag. This is mostly
+    #                Must run the master with the -g flag. This is mostly
     #                useful if you don't have a nice library like Einhorn::Worker.
     #                Then @arg being true causes the FD to be left open after ACK;
     #                otherwise it is closed.
@@ -57,7 +57,7 @@ module Einhorn
         socket = ENV['EINHORN_SOCK_PATH']
         client = Einhorn::Client.for_path(socket)
       when :fd
-        raise "No EINHORN_SOCK_FD provided in environment. Did you run einhorn with the -b flag?" unless fd_str = ENV['EINHORN_SOCK_FD']
+        raise "No EINHORN_SOCK_FD provided in environment. Did you run einhorn with the -g flag?" unless fd_str = ENV['EINHORN_SOCK_FD']
 
         fd = Integer(fd_str)
         client = Einhorn::Client.for_fd(fd)
