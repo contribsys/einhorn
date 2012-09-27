@@ -287,6 +287,11 @@ module Einhorn
         Einhorn.log_info("Starting upgrade to #{Einhorn::State.version}...")
       end
 
+      # Reset this, since we've just upgraded to a new universe (I'm
+      # not positive this is the right behavior, but it's not
+      # obviously wrong.)
+      Einhorn::State.consecutive_deaths_before_ack = 0
+
       Einhorn::State.version += 1
       replenish_immediately
     end
