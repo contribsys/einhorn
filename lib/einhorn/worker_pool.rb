@@ -1,7 +1,7 @@
 module Einhorn
   module WorkerPool
     def self.workers
-      Einhorn::State.children.map {|pid, _| pid}
+      Einhorn::State.children.keys
     end
 
     def self.unsignaled_workers

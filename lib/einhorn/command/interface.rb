@@ -148,17 +148,17 @@ module Einhorn::Command
     ## Signals
     def self.install_handlers
       Signal.trap("INT") do
-        Einhorn::Command.signal_all("USR2", Einhorn::State.children.keys)
+        Einhorn::Command.signal_all("USR2", Einhorn::WorkerPool.workers)
         Einhorn::State.respawn = false
       end
       Signal.trap("TERM") do
-        Einhorn::Command.signal_all("TERM", Einhorn::State.children.keys)
+        Einhorn::Command.signal_all("TERM", Einhorn::WorkerPool.workers)
         Einhorn::State.respawn = false
       end
       # Note that quit is a bit different, in that it will actually
       # make Einhorn quit without waiting for children to exit.
       Signal.trap("QUIT") do
-        Einhorn::Command.signal_all("QUIT", Einhorn::State.children.keys)
+        Einhorn::Command.signal_all("QUIT", Einhorn::WorkerPool.workers)
         Einhorn::State.respawn = false
         exit(1)
       end
@@ -166,12 +166,12 @@ module Einhorn::Command
       Signal.trap("ALRM") {Einhorn::Command.full_upgrade}
       Signal.trap("CHLD") {Einhorn::Event.break_loop}
       Signal.trap("USR2") do
-        Einhorn::Command.signal_all("USR2", Einhorn::State.children.keys)
+        Einhorn::Command.signal_all("USR2", Einhorn::WorkerPool.workers)
         Einhorn::State.respawn = false
       end
       at_exit do
         if Einhorn::State.kill_children_on_exit && Einhorn::TransientState.whatami == :master
-          Einhorn::Command.signal_all("USR2", Einhorn::State.children.keys)
+          Einhorn::Command.signal_all("USR2", Einhorn::WorkerPool.workers)
           Einhorn::State.respawn = false
         end
       end
