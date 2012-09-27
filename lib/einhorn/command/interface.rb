@@ -320,5 +320,53 @@ EOF
       Einhorn::Command.full_upgrade
       nil
     end
+
+    command 'signal', 'Send one or more signals to all workers' do |conn, request|
+      args = request['args']
+      if message = validate_args(args)
+        next message
+      end
+
+      args = normalize_signals(args)
+
+      if message = validate_signals(args)
+        next message
+      end
+
+      results = args.map do |signal|
+        Einhorn::Command.signal_all(signal, nil, false)
+      end
+
+      results.join("\n")
+    end
+
+    def self.validate_args(args)
+      return 'No args provided' unless args
+      return 'Args must be an array' unless args.kind_of?(Array)
+
+      args.each do |arg|
+        return "Argument is a #{arg.class}, not a string: #{arg.inspect}" unless arg.kind_of?(String)
+      end
+
+      nil
+    end
+
+    def self.validate_signals(args)
+      args.each do |signal|
+        unless Signal.list.include?(signal)
+          return "Invalid signal: #{signal.inspect}"
+        end
+      end
+
+      nil
+    end
+
+    def self.normalize_signals(args)
+      args.map do |signal|
+        signal = signal.upcase
+        signal = $1 if signal =~ /\ASIG(.*)\Z/
+        signal
+      end
+    end
   end
 end

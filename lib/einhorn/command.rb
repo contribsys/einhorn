@@ -83,7 +83,10 @@ module Einhorn
       Einhorn::Event.break_loop
     end
 
-    def self.signal_all(signal, children)
+    def self.signal_all(signal, children=nil, record=true)
+      children ||= Einhorn::WorkerPool.workers
+
+      signaled = []
       Einhorn.log_info("Sending #{signal} to #{children.inspect}")
 
       children.each do |child|
@@ -92,16 +95,22 @@ module Einhorn
           next
         end
 
-        if spec[:signaled].include?(child)
-          Einhorn.log_error("Re-sending #{signal} to already-signaled child #{child.inspect}. It may be slow to spin down, or it may be swallowing #{signal}s.")
+        if record
+          if spec[:signaled].include?(signal)
+            Einhorn.log_error("Re-sending #{signal} to already-signaled child #{child.inspect}. It may be slow to spin down, or it may be swallowing #{signal}s.")
+          end
+          spec[:signaled].add(signal)
         end
-        spec[:signaled].add(child)
 
         begin
           Process.kill(signal, child)
         rescue Errno::ESRCH
+        else
+          signaled << child
         end
       end
+
+      "Successfully sent #{signal}s to #{signaled.length} processes: #{signaled.inspect}"
     end
 
     def self.increment

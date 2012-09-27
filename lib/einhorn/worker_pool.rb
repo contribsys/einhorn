@@ -1,5 +1,9 @@
 module Einhorn
   module WorkerPool
+    def self.workers
+      Einhorn::State.children.map {|pid, _| pid}
+    end
+
     def self.unsignaled_workers
       Einhorn::State.children.select do |pid, spec|
         spec[:signaled].length == 0
