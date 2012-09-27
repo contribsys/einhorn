@@ -3,6 +3,7 @@ require 'logger'
 require 'optparse'
 
 require 'readline'
+require 'shellwords'
 
 require 'rubygems'
 require 'einhorn'
@@ -20,13 +21,14 @@ module Einhorn
       emit('Type "quit" or "exit" to quit at any time')
 
       while line = Readline.readline('> ', true)
-        if ['quit', 'exit'].include?(line)
+        command, args = parse_command(line)
+        if ['quit', 'exit'].include?(command)
           emit("Goodbye!")
           return
         end
 
         begin
-          response = @client.command({'command' => line})
+          response = @client.command({'command' => command, 'args' => args})
         rescue Errno::EPIPE => e
           emit("einhornsh: Error communicating with Einhorn: #{e} (#{e.class})")
           emit("einhornsh: Attempting to reconnect...")
@@ -41,6 +43,11 @@ module Einhorn
           puts "Invalid response type #{response.class}: #{response.inspect}"
         end
       end
+    end
+
+    def parse_command(line)
+      command, *args = Shellwords.shellsplit(line)
+      [command, args]
     end
 
     def reconnect
