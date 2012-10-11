@@ -270,6 +270,7 @@ if true # $0 == __FILE__
     end
 
     opts.on('--with-state-fd STATE', '[Internal option] With file descriptor containing state') do |fd|
+      Einhorn::TransientState.stateful = true
       read = IO.for_fd(Integer(fd))
       state = read.read
       read.close
