@@ -57,6 +57,16 @@ module Einhorn
       register_ack(pid)
     end
 
+    def self.register_worker_state(pid, state)
+      unless Einhorn::State.children[pid]
+        Einhorn.log_debug("Received state from dead worker #{pid}")
+        return
+      end
+
+      child = Einhorn::State.children[pid]
+      child[:state] = state
+    end
+
     def self.register_timer_ack(time, pid)
       ack_mode = Einhorn::State.ack_mode
       unless ack_mode[:type] == :timer
@@ -236,6 +246,7 @@ module Einhorn
         :type => :worker,
         :version => Einhorn::State.version,
         :acked => false,
+        :state => nil,
         :signaled => Set.new
       }
       Einhorn::State.last_spinup = Time.now

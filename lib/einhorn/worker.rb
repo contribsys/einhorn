@@ -33,6 +33,17 @@ module Einhorn
       end
     end
 
+    def self.send_state(state)
+      unless @client
+        raise "No client set; Did you call 'ack'?"
+      end
+      @client.command({
+        'command' => 'worker:state',
+        'pid'     => $$,
+        'state'   => state
+      })
+    end
+
     # Call this once your app is up and running in a good state.
     # Arguments:
     #
@@ -48,9 +59,8 @@ module Einhorn
     # TODO: add a :fileno option? Easy to implement; not sure if it'd
     # be useful for anything. Maybe if it's always fd 3, because then
     # the user wouldn't have to provide an arg.
-    def self.ack!(discovery=:env, arg=nil)
+    def self.ack!(discovery=:env, keep_open=false)
       ensure_worker!
-      close_after_use = true
 
       case discovery
       when :env
@@ -61,7 +71,6 @@ module Einhorn
 
         fd = Integer(fd_str)
         client = Einhorn::Client.for_fd(fd)
-        close_after_use = false if arg
       when :direct
         socket = arg
         client = Einhorn::Client.for_path(socket)
@@ -70,11 +79,16 @@ module Einhorn
       end
 
       client.command({
-          'command' => 'worker:ack',
-          'pid' => $$
-        })
+        'command' => 'worker:ack',
+        'pid' => $$,
+        'keep-open' => keep_open
+      })
 
-      client.close if close_after_use
+      if keep_open
+        @client = client
+      else
+        client.close
+      end
       true
     end
 

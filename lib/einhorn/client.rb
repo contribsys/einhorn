@@ -29,7 +29,7 @@ module Einhorn
       end
     end
 
-    @@responseless_commands = Set.new(['worker:ack'])
+    @@responseless_commands = Set.new(['worker:ack', 'worker:state'])
 
     def self.for_path(path_to_socket)
       socket = UNIXSocket.open(path_to_socket)

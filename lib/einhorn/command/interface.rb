@@ -260,7 +260,16 @@ EOF
         conn.log_error("Invalid request (no pid): #{request.inspect}")
       end
       # Throw away this connection in case the application forgets to
-      conn.close
+      conn.close unless request['keep-open']
+      nil
+    end
+
+    command 'worker:state' do |conn, request|
+      if (pid = request['pid']) && (state = request['state'])
+        Einhorn::Command.register_worker_state(pid, state)
+      else
+        conn.log_error("Invalid request (missing pid or state): #{request.inspect}")
+      end
       nil
     end
 
