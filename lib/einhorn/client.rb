@@ -7,9 +7,13 @@ module Einhorn
     # Keep this in this file so client can be loaded entirely
     # standalone by user code.
     module Transport
-      def self.send_message(socket, message)
+      def self.send_message(socket, message, blocking=true)
         line = serialize_message(message)
-        socket.write(line)
+        if blocking
+          socket.write(line)
+        else
+          socket.write_nonblock(line)
+        end
       end
 
       def self.receive_message(socket)
@@ -46,7 +50,7 @@ module Einhorn
     end
 
     def command(command_hash)
-      Transport.send_message(@socket, command_hash)
+      Transport.send_message(@socket, command_hash, expect_response?(command_hash))
       Transport.receive_message(@socket) if expect_response?(command_hash)
     end
 
