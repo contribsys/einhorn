@@ -258,7 +258,7 @@ if true # $0 == __FILE__
     end
 
     opts.on('-q', '--quiet', 'Make output quiet (can be reconfigured on the fly)') do
-      Einhorn::Command.louder(false)
+      Einhorn::Command.quieter(false)
     end
 
     opts.on('-s', '--seconds N', 'Number of seconds to wait until respawning') do |b|
