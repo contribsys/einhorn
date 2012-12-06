@@ -50,6 +50,9 @@ module Einhorn
 
         wait_loop if wait
       end
+    rescue Interrupt => e
+      Einhorn::EinhornSH.emit
+      exit(0)
     end
 
     def parse_command(line)
@@ -90,6 +93,8 @@ EOF
         update = send_command('shell:wait')
         puts update['message']
       end while update['wait']
+    rescue Interrupt => e
+      send_command('shell:unwait')
     end
 
     def ehlo
@@ -144,11 +149,6 @@ with a `-d`, provide the same argument here."
   if ARGV.length > 1
     Einhorn::EinhornSH.emit(optparse, true)
     return 1
-  end
-
-  Signal.trap("INT") do
-    Einhorn::EinhornSH.emit
-    exit(0)
   end
 
   path_to_socket = options[:socket_path]

@@ -374,6 +374,11 @@ wait: Wait for einhorn state to stabilise. Optionally takes another command as a
       nil
     end
 
+    command 'shell:unwait' do |conn, _|
+      @@waiting.delete conn
+      nil
+    end
+
     def self.validate_args(args)
       return 'No args provided' unless args
       return 'Args must be an array' unless args.kind_of?(Array)
