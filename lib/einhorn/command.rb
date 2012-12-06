@@ -343,9 +343,7 @@ module Einhorn
       return if Einhorn::TransientState.has_outstanding_spinup_timer
       return unless Einhorn::WorkerPool.missing_worker_count > 0
 
-      # Exponentially backoff automated spinup if we're just having
-      # things die before ACKing
-      spinup_interval = Einhorn::State.config[:seconds] * (1.5 ** Einhorn::State.consecutive_deaths_before_ack)
+      spinup_interval = self.spinup_interval
       seconds_ago = (Time.now - Einhorn::State.last_spinup).to_f
 
       if seconds_ago > spinup_interval
@@ -381,6 +379,12 @@ module Einhorn
       output = "Verbosity set to #{Einhorn::State.verbosity}"
       Einhorn.log_info(output) if log
       output
+    end
+
+    # Exponentially backoff automated spinup if we're just having
+    # things die before ACKing
+    def self.spinup_interval
+      Einhorn::State.config[:seconds] * (1.5 ** Einhorn::State.consecutive_deaths_before_ack)
     end
   end
 end
