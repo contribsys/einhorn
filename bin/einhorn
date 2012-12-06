@@ -105,6 +105,14 @@ Once the new workers have been spawned, Einhorn will send each old
 worker a SIGUSR2. SIGUSR2 should be interpreted as a request for a
 graceful shutdown.
 
+By default einhornsh commands are handled asyncronously, if you'd
+like to watch while the changes you ask for take effect prefix your
+command with wait:
+
+    $ einhornsh
+    ...
+    > wait upgrade
+
 ### ACKs
 
 After Einhorn spawns a worker, it will only consider the worker up

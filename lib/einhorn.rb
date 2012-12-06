@@ -281,6 +281,7 @@ module Einhorn
       Einhorn::Command.reap
       Einhorn::Command.replenish
       Einhorn::Command.cull
+      Einhorn::Command::Interface.notify_waiters
 
       # Make sure to do this last, as it's blocking.
       Einhorn::Event.loop_once
