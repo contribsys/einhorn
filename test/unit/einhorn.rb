@@ -35,4 +35,24 @@ class EinhornTest < Test::Unit::TestCase
       assert_equal(['foo', '--opt=10', '10'], cmd)
     end
   end
+
+  context '.update_state' do
+    should 'correctly update keys to match new default state hash' do
+      Einhorn::State.stubs(:default_state).returns(:baz => 23, :foo => 1)
+      old_state = {:foo => 2, :bar => 2}
+
+      updated_state, message = Einhorn.update_state(old_state)
+      assert_equal({:baz => 23, :foo => 2}, updated_state)
+      assert_match(/State format has changed/, message)
+    end
+
+    should 'not change the state if the format has not changed' do
+      Einhorn::State.stubs(:default_state).returns(:baz => 23, :foo => 1)
+      old_state = {:baz => 14, :foo => 1234}
+
+      updated_state, message = Einhorn.update_state(old_state)
+      assert_equal({:baz => 14, :foo => 1234}, updated_state)
+      assert(message.nil?)
+    end
+  end
 end

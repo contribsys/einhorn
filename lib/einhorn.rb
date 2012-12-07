@@ -81,10 +81,33 @@ module Einhorn
 
   def self.restore_state(state)
     parsed = YAML.load(state)
-    Einhorn::State.state = parsed[:state]
+    updated_state, message = update_state(parsed[:state])
+    Einhorn::State.state = updated_state
     Einhorn::Event.restore_persistent_descriptors(parsed[:persistent_descriptors])
-    # Do this after setting state so verbosity is right9
+    # Do this after setting state so verbosity is right
     Einhorn.log_info("Using loaded state: #{parsed.inspect}")
+    Einhorn.log_info(message) if message
+  end
+
+  def self.update_state(old_state)
+    # TODO: handle format updates somehow? (probably need to write
+    # special-case code for each)
+    updated_state = old_state.dup
+    default = Einhorn::State.default_state
+    added_keys = default.keys - old_state.keys
+    deleted_keys = old_state.keys - default.keys
+    return [updated_state, nil] if added_keys.length == 0 && deleted_keys.length == 0
+
+    added_keys.each {|key| updated_state[key] = default[key]}
+    deleted_keys.each {|key| updated_state.delete(key)}
+
+    message = []
+    message << "adding default values for #{added_keys.inspect}"
+    message << "deleting values for #{deleted_keys.inspect}"
+    message = "State format has changed: #{message.join(', ')}"
+
+    # Can't print yet, since state hasn't been set, so we pass along the message.
+    [updated_state, message]
   end
 
   def self.print_state
