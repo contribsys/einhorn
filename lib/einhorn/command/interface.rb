@@ -150,10 +150,12 @@ module Einhorn::Command
       Signal.trap("INT") do
         Einhorn::Command.signal_all("USR2", Einhorn::WorkerPool.workers)
         Einhorn::State.respawn = false
+        Einhorn::Event.break_loop
       end
       Signal.trap("TERM") do
         Einhorn::Command.signal_all("TERM", Einhorn::WorkerPool.workers)
         Einhorn::State.respawn = false
+        Einhorn::Event.break_loop
       end
       # Note that quit is a bit different, in that it will actually
       # make Einhorn quit without waiting for children to exit.
@@ -168,6 +170,7 @@ module Einhorn::Command
       Signal.trap("USR2") do
         Einhorn::Command.signal_all("USR2", Einhorn::WorkerPool.workers)
         Einhorn::State.respawn = false
+        Einhorn::Event.break_loop
       end
       at_exit do
         if Einhorn::State.kill_children_on_exit && Einhorn::TransientState.whatami == :master
