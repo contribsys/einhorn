@@ -5,6 +5,8 @@ module Einhorn::Command
   module Interface
     @@commands = {}
     @@command_server = nil
+    @@waiting = Set.new
+    @@last_message = ""
 
     def self.command_server=(server)
       raise "Command server already set" if @@command_server && server
@@ -275,6 +277,7 @@ EOF
 "You are speaking to the Einhorn command socket. You can run the following commands:
 
 #{command_descriptions}
+wait: Wait for einhorn state to stabilise. Optionally takes another command as argument.
 "
     end
 
@@ -358,7 +361,22 @@ EOF
       response = Einhorn::Command.signal_all(signal, Einhorn::WorkerPool.workers)
       Einhorn::State.respawn = false
 
+
       "Einhorn is going down! #{response}"
+    end
+
+    # Used by einhornsh to wait for results
+    command 'shell:wait' do |conn, _|
+      unless @@waiting.include?(conn)
+        @@waiting << conn
+        notify_waiters :always => true
+      end
+      nil
+    end
+
+    command 'shell:unwait' do |conn, _|
+      @@waiting.delete conn
+      nil
     end
 
     def self.validate_args(args)
@@ -388,6 +406,41 @@ EOF
         signal = $1 if signal =~ /\ASIG(.*)\Z/
         signal
       end
+    end
+
+    def self.notify_waiters(opts={})
+      return if @@waiting.length == 0
+
+      bits = []
+      if Einhorn::WorkerPool.signaled_workers.length > 0
+        bits << "#{Einhorn::WorkerPool.signaled_workers.inspect} to exit"
+      end
+      if Einhorn::WorkerPool.unacked_workers.length > 0
+        bits << "#{Einhorn::WorkerPool.unacked_workers.inspect} to ack"
+      end
+      if Einhorn::WorkerPool.missing_worker_count > 0 && Einhorn::State.respawn
+        bits << "#{Einhorn::Command.spinup_interval}s before starting #{Einhorn::WorkerPool.missing_worker_count} more"
+      end
+
+      if bits.length == 0
+        notify_done
+      else
+        message = "Waiting for #{bits.join(", ")}..."
+      end
+
+      if opts[:always] || message != @@last_message
+        @@last_message = message
+        @@waiting.each do |conn|
+          send_message(conn, 'message' => message, 'wait' => true)
+        end
+      end
+    end
+
+    def self.notify_done
+      @@waiting.each do |conn|
+        send_message(conn, 'Done')
+      end
+      @@waiting.clear
     end
   end
 end

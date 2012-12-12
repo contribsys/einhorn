@@ -27,27 +27,47 @@ module Einhorn
           return
         end
 
-        begin
-          response = @client.command({'command' => command, 'args' => args})
-        rescue Errno::EPIPE => e
-          emit("einhornsh: Error communicating with Einhorn: #{e} (#{e.class})")
-          emit("einhornsh: Attempting to reconnect...")
-          reconnect
-
-          retry
-        end
-
-        if response.kind_of?(Hash)
-          puts response['message']
+        if command == 'wait'
+          command = args.shift
+          wait = true
         else
-          puts "Invalid response type #{response.class}: #{response.inspect}"
+          wait = false
         end
+
+        if wait && !command
+          wait_loop
+          next
+        end
+
+        response = send_command(command, args)
+
+        unless response.kind_of?(Hash)
+          puts "Invalid response type #{response.class}: #{response.inspect}"
+          next
+        end
+
+        puts response['message']
+
+        wait_loop if wait
       end
+    rescue Interrupt => e
+      Einhorn::EinhornSH.emit
+      exit(0)
     end
 
     def parse_command(line)
       command, *args = Shellwords.shellsplit(line)
       [command, args]
+    end
+
+    def send_command(command, args=[])
+      response = @client.command({'command' => command, 'args' => args})
+    rescue Errno::EPIPE => e
+      emit("einhornsh: Error communicating with Einhorn: #{e} (#{e.class})")
+      emit("einhornsh: Attempting to reconnect...")
+      reconnect
+
+      retry
     end
 
     def reconnect
@@ -66,6 +86,15 @@ EOF
         exit(1)
       end
       ehlo if interactive?
+    end
+
+    def wait_loop
+      begin
+        update = send_command('shell:wait')
+        puts update['message']
+      end while update['wait']
+    rescue Interrupt => e
+      send_command('shell:unwait')
     end
 
     def ehlo
@@ -120,11 +149,6 @@ with a `-d`, provide the same argument here."
   if ARGV.length > 1
     Einhorn::EinhornSH.emit(optparse, true)
     return 1
-  end
-
-  Signal.trap("INT") do
-    Einhorn::EinhornSH.emit
-    exit(0)
   end
 
   path_to_socket = options[:socket_path]

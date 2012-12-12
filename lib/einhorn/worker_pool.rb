@@ -10,6 +10,12 @@ module Einhorn
       end.map {|pid, _| pid}
     end
 
+    def self.unacked_workers
+      Einhorn::State.children.select do |pid, spec|
+        !spec[:acked]
+      end.map {|pid, _| pid}
+    end
+
     def self.modern_workers_with_state
       Einhorn::State.children.select do |pid, spec|
         spec[:version] == Einhorn::State.version
@@ -55,6 +61,10 @@ module Einhorn
 
     def self.old_workers
       unsignaled_workers - modern_workers
+    end
+
+    def self.signaled_workers
+      workers - unsignaled_workers
     end
   end
 end
