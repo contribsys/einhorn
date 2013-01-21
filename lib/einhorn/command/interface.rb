@@ -361,6 +361,32 @@ EOF
       "Einhorn is going down! #{response}"
     end
 
+    command 'config', 'Merge in a new set of config options. (Note: this will likely be subsumed by config file reloading at some point.)' do |conn, request|
+      args = request['args']
+      if message = validate_args(args)
+        next message
+      end
+
+      unless args.length > 0
+        next 'Must pass in a YAML-encoded hash'
+      end
+
+      begin
+        # We do the joining so people don't need to worry about quoting
+        parsed = YAML.load(args.join(' '))
+      rescue ArgumentError => e
+        next 'Could not parse argument. Must be a YAML-encoded hash'
+      end
+
+      unless parsed.kind_of?(Hash)
+        next "Parsed argument is a #{parsed.class}, not a hash"
+      end
+
+      Einhorn::State.state.merge!(parsed)
+
+      "Successfully merged in config: #{parsed.inspect}"
+    end
+
     def self.validate_args(args)
       return 'No args provided' unless args
       return 'Args must be an array' unless args.kind_of?(Array)
