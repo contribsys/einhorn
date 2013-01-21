@@ -206,6 +206,7 @@ module Einhorn
       if Einhorn::TransientState.preloaded
         pid = fork do
           Einhorn::TransientState.whatami = :worker
+          prepare_child_process
 
           Einhorn.log_info('About to tear down Einhorn state and run einhorn_main')
           Einhorn::Command::Interface.uninit
@@ -218,6 +219,7 @@ module Einhorn
       else
         pid = fork do
           Einhorn::TransientState.whatami = :worker
+          prepare_child_process
 
           Einhorn.log_info("About to exec #{cmd.inspect}")
           # Here's the only case where cloexec would help. Since we
@@ -264,6 +266,10 @@ module Einhorn
       # lists. (I don't think anyone actually uses that functionality,
       # but seems reasonable enough.)
       ENV['EINHORN_FDS'] = Einhorn::State.bind_fds.map(&:to_s).join(' ')
+    end
+
+    def self.prepare_child_process
+      Einhorn.renice_self(false)
     end
 
     def self.full_upgrade

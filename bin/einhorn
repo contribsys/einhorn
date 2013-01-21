@@ -269,6 +269,19 @@ if true # $0 == __FILE__
       Einhorn::Command.louder(false)
     end
 
+    opts.on('--nice MASTER[,WORKER=0]', 'Unix nice level at which to run the einhorn processes') do |nice|
+      eid = Process::UID.eid
+      unless eid == 0
+        puts "You must be root in order to specify --nice (you are running as user #{eid})"
+        exit(1)
+      end
+      master, worker = nice.split(',')
+      Einhorn::State.nice = {
+        :master => Integer(master) || 0,
+        :worker => Integer(worker) || 0
+      }
+    end
+
     opts.on('--with-state-fd STATE', '[Internal option] With file descriptor containing state') do |fd|
       Einhorn::TransientState.stateful = true
       read = IO.for_fd(Integer(fd))

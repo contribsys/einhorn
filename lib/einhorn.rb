@@ -57,7 +57,8 @@ module Einhorn
         :pidfile => nil,
         :lockfile => nil,
         :consecutive_deaths_before_ack => 0,
-        :last_upgraded => nil
+        :last_upgraded => nil,
+        :nice => {:master => nil, :worker => nil}
       }
     end
   end
@@ -245,6 +246,28 @@ module Einhorn
     Einhorn::State.cmd_name ? "ruby #{Einhorn::State.cmd_name}" : Einhorn::State.orig_cmd.join(' ')
   end
 
+  def self.renice_self(master)
+    if master
+      nice = Einhorn::State.nice[:master]
+    else
+      nice = Einhorn::State.nice[:worker]
+    end
+    log_info("Renicing self to #{master ? 'master' : 'worker'} level #{nice}")
+    renice($$, nice) if nice
+  end
+
+  def self.renice(pid, nice)
+    # Avoid code for a potential shell injection
+    unless pid.kind_of?(Fixnum) && nice.kind_of?(Fixnum)
+      raise "Can only pass fixnums to renice: #{pid.inspect}, #{nice.inspect}"
+    end
+    `renice #{nice} -p #{pid}`
+    unless $?.exitstatus == 0
+      # TODO: better error handling?
+      log_error("Renice command exited with status: #{$?.inspect}, but continuing on anyway.")
+    end
+  end
+
   def self.socketify_env!
     Einhorn::State.bind.each do |host, port, flags|
       fd = bind(host, port, flags)
@@ -290,6 +313,7 @@ module Einhorn
     end
 
     set_master_ps_name
+    renice_self(true)
     preload
 
     # In the middle of upgrading
