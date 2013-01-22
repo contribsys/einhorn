@@ -246,26 +246,19 @@ module Einhorn
     Einhorn::State.cmd_name ? "ruby #{Einhorn::State.cmd_name}" : Einhorn::State.orig_cmd.join(' ')
   end
 
-  def self.renice_self(master)
-    if master
-      nice = Einhorn::State.nice[:master]
-    else
-      nice = Einhorn::State.nice[:worker]
+  def self.renice_self
+    whatami = Einhorn::TransientState.whatami
+    return unless nice = Einhorn::State.nice[whatami]
+    pid = $$
+
+    unless nice.kind_of?(Fixnum)
+      raise "Nice must be a fixnum: #{nice.inspect}"
     end
 
-    if nice
-      log_info("Renicing self to #{master ? 'master' : 'worker'} level #{nice}")
-      renice($$, nice)
-    end
-  end
-
-  def self.renice(pid, nice)
-    # Avoid code for a potential shell injection
-    unless pid.kind_of?(Fixnum) && nice.kind_of?(Fixnum)
-      raise "Can only pass fixnums to renice: #{pid.inspect}, #{nice.inspect}"
-    end
     # Explicitly don't shellescape the renice command
-    `#{Einhorn::State.nice[:renice_cmd]} #{nice} -p #{pid}`
+    cmd = "#{Einhorn::State.nice[:renice_cmd]} #{nice} -p #{pid}"
+    log_info("Running #{cmd.inspect} to renice self to level #{nice}")
+    `#{cmd}`
     unless $?.exitstatus == 0
       # TODO: better error handling?
       log_error("Renice command exited with status: #{$?.inspect}, but continuing on anyway.")
@@ -317,7 +310,7 @@ module Einhorn
     end
 
     set_master_ps_name
-    renice_self(true)
+    renice_self
     preload
 
     # In the middle of upgrading

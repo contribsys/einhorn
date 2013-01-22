@@ -269,7 +269,7 @@ module Einhorn
     end
 
     def self.prepare_child_process
-      Einhorn.renice_self(false)
+      Einhorn.renice_self
     end
 
     def self.full_upgrade
