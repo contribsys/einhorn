@@ -58,7 +58,7 @@ module Einhorn
         :lockfile => nil,
         :consecutive_deaths_before_ack => 0,
         :last_upgraded => nil,
-        :nice => {:master => nil, :worker => nil}
+        :nice => {:master => nil, :worker => nil, :renice_cmd => '/usr/bin/renice'}
       }
     end
   end
@@ -261,7 +261,8 @@ module Einhorn
     unless pid.kind_of?(Fixnum) && nice.kind_of?(Fixnum)
       raise "Can only pass fixnums to renice: #{pid.inspect}, #{nice.inspect}"
     end
-    `renice #{nice} -p #{pid}`
+    # Explicitly don't shellescape the renice command
+    `#{Einhorn::State.nice[:renice_cmd]} #{nice} -p #{pid}`
     unless $?.exitstatus == 0
       # TODO: better error handling?
       log_error("Renice command exited with status: #{$?.inspect}, but continuing on anyway.")

@@ -269,17 +269,19 @@ if true # $0 == __FILE__
       Einhorn::Command.louder(false)
     end
 
-    opts.on('--nice MASTER[,WORKER=0]', 'Unix nice level at which to run the einhorn processes') do |nice|
+    opts.on('--nice MASTER[:WORKER=0][:RENICE_CMD=/usr/bin/renice]', 'Unix nice level at which to run the einhorn processes. If you need to use sudo, then encode that in RENICE_CMD.') do |nice|
       eid = Process::UID.eid
       unless eid == 0
         puts "You must be root in order to specify --nice (you are running as user #{eid})"
         exit(1)
       end
-      master, worker = nice.split(',')
-      Einhorn::State.nice = {
-        :master => Integer(master) || 0,
-        :worker => Integer(worker) || 0
-      }
+      master, worker, renice_cmd = nice.split(':')
+      master = Integer(master) if master
+      worker = Integer(worker) if worker
+
+      Einhorn::State.nice[:master] = master if master
+      Einhorn::State.nice[:worker] = worker if worker
+      Einhorn::State.nice[:renice_cmd] = renice_cmd if renice_cmd
     end
 
     opts.on('--with-state-fd STATE', '[Internal option] With file descriptor containing state') do |fd|
