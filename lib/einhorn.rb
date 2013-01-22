@@ -252,8 +252,11 @@ module Einhorn
     else
       nice = Einhorn::State.nice[:worker]
     end
-    log_info("Renicing self to #{master ? 'master' : 'worker'} level #{nice}")
-    renice($$, nice) if nice
+
+    if nice
+      log_info("Renicing self to #{master ? 'master' : 'worker'} level #{nice}")
+      renice($$, nice)
+    end
   end
 
   def self.renice(pid, nice)
