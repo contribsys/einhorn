@@ -8,20 +8,22 @@ module Einhorn
     @@writeable = {}
     @@timers = {}
 
+    def self.cloexec!(fd)
+      fd.fcntl(Fcntl::F_SETFD, fd.fcntl(Fcntl::F_GETFD) | Fcntl::FD_CLOEXEC)
+    end
+
     def self.init
       readable, writeable = IO.pipe
       @@loopbreak_reader = LoopBreaker.open(readable)
       @@loopbreak_writer = writeable
-    end
 
-    def self.uninit
-      # These don't need to persist across Einhorn reloads, so let's not keep.
-      @@loopbreak_reader.close
-      @@loopbreak_writer.close
+      cloexec!(readable)
+      cloexec!(writeable)
     end
 
     def self.close_all
-      uninit
+      @@loopbreak_reader.close
+      @@loopbreak_writer.close
       (@@readable.values + @@writeable.values).each do |descriptors|
         descriptors.each do |descriptor|
           descriptor.close

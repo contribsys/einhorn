@@ -292,9 +292,6 @@ EOF
       # buffer and lost upon reload.
       send_message(conn, 'Reloading, as commanded')
       Einhorn::Command.reload
-
-      # Reload should not return
-      raise "Not reachable"
     end
 
     command 'inc', 'Increment the number of Einhorn child processes' do

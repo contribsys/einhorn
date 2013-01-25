@@ -192,13 +192,16 @@ module Einhorn
       end
       write.close
 
-      Einhorn::Event.uninit
-
       # Reload the original environment
       ENV.clear
       ENV.update(Einhorn::TransientState.environ)
 
-      exec [Einhorn::TransientState.script_name, Einhorn::TransientState.script_name], *(['--with-state-fd', read.fileno.to_s, '--'] + Einhorn::State.cmd)
+      begin
+        exec [Einhorn::TransientState.script_name, Einhorn::TransientState.script_name], *(['--with-state-fd', read.fileno.to_s, '--'] + Einhorn::State.cmd)
+      rescue SystemCallError => e
+        Einhorn.log_error("Could not reload! Attempting to continue. Error was: #{e}")
+        read.close
+      end
     end
 
     def self.spinup(cmd=nil)
