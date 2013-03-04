@@ -1,17 +1,23 @@
 module Einhorn
   module WorkerPool
+    def self.workers_with_state
+      Einhorn::State.children.select do |pid, spec|
+        spec[:type] == :worker
+      end
+    end
+
     def self.workers
-      Einhorn::State.children.keys
+      workers_with_state.map {|pid, _| pid}
     end
 
     def self.unsignaled_workers
-      Einhorn::State.children.select do |pid, spec|
+      workers_with_state.select do |pid, spec|
         spec[:signaled].length == 0
       end.map {|pid, _| pid}
     end
 
     def self.modern_workers_with_state
-      Einhorn::State.children.select do |pid, spec|
+      workers_with_state.select do |pid, spec|
         spec[:version] == Einhorn::State.version
       end
     end
