@@ -27,10 +27,9 @@ end
 
 def einhorn_main
   puts "Called with #{ARGV.inspect}"
+  fd_count = Einhorn::Worker.einhorn_fd_count
 
-  einhorn_fds = Einhorn::Worker.einhorn_fds
-
-  unless einhorn_fds
+  unless fd_count > 0
     raise "Need to call with at least one bound socket. Try running 'einhorn -b 127.0.0.1:5000,r,n -b 127.0.0.1:5001,r,n #{$0}' and then running 'curl 127.0.0.1:5000' or 'curl 127.0.0.1:5001'"
   end
 
@@ -41,7 +40,8 @@ def einhorn_main
   Einhorn::Worker.ack!
 
   EventMachine.run do
-    einhorn_fds.each_with_index do |sock, i|
+    (0...fd_count).each do |i|
+      sock = Einhorn::Worker.socket!(i)
       srv = Thin::Server.new(sock, App.new(i), :reuse => true)
       srv.start
     end

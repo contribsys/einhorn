@@ -2,7 +2,8 @@
 #
 # A simple example showing how to use Einhorn's shared-socket
 # features. Einhorn translates the (addr:port[,flags...]) bind spec in
-# into a file descriptor number in the EINHORN_FDS environment variable.
+# into a file descriptor number in the EINHORN_FD_# environment
+# variables.
 #
 # Invoke through Einhorn as
 #
@@ -15,7 +16,7 @@ require 'rubygems'
 require 'einhorn/worker'
 
 def einhorn_main
-  puts "Called with ENV['EINHORN_FDS']: #{ENV['EINHORN_FDS']}"
+  puts "Called with ENV['EINHORN_FD_1']: #{ENV['EINHORN_FD_1']}"
 
   fd_num = Einhorn::Worker.socket!
   socket = Socket.for_fd(fd_num)
