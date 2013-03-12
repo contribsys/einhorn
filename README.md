@@ -80,12 +80,17 @@ Each address is specified as an ip/port pair, possibly accompanied by options:
     ADDR := (IP:PORT)[<,OPT>...]
 
 In the worker process, the opened file descriptors will be represented
-as a space-separated list of file descriptor numbers in the
-EINHORN_FDS environment variable (respecting the order that the `-b`
-options were provided in):
+as file descriptor numbers in a series of environment variables named
+EINHORN_FD_1, EINHORN_FD_2, etc. (respecting the order that the `-b`
+options were provided in), with the total number of file descriptors
+in the EINHORN_FD_COUNT environment variable:
 
-    EINHORN_FDS="6" # 127.0.0.1:1234
-    EINHORN_FDS="6 7" # 127.0.0.1:1234,r 127.0.0.1:1235
+    EINHORN_FD_1="6" # 127.0.0.1:1234
+    EINHORN_FD_COUNT="1"
+
+    EINHORN_FD_1="6" # 127.0.0.1:1234,r
+    EINHORN_FD_2="7" # 127.0.0.1:1235
+    EINHORN_FD_COUNT="2"
 
 Valid opts are:
 
@@ -98,7 +103,7 @@ You can for example run:
 
 Which will run 4 copies of
 
-    EINHORN_FDS=6 example/time_server
+    EINHORN_FD_1=6 EINHORN_FD_COUNT=1 example/time_server
 
 Where file descriptor 6 is a server socket bound to `127.0.0.1:2345`
 and with `SO_REUSEADDR` set. It is then your application's job to
@@ -191,7 +196,7 @@ pass `-c <name>`.
 
 ### Options
 
-    -b, --bind ADDR                  Bind an address and add the corresponding FD to EINHORN_FDS
+    -b, --bind ADDR                  Bind an address and add the corresponding FD via the environment
     -c, --command-name CMD_NAME      Set the command name in ps to this value
     -d, --socket-path PATH           Where to open the Einhorn command socket
     -e, --pidfile PIDFILE            Where to write out the Einhorn pidfile
