@@ -266,9 +266,14 @@ module Einhorn
         Einhorn::TransientState.socket_handles << socket
         ENV['EINHORN_SOCK_FD'] = socket.fileno.to_s
       end
-      # Try to match Upstart's internal support for space-separated FD
-      # lists. (I don't think anyone actually uses that functionality,
-      # but seems reasonable enough.)
+
+      ENV['EINHORN_FD_COUNT'] = Einhorn::State.bind_fds.length.to_s
+      Einhorn::State.bind_fds.each_with_index {|fd, i| ENV["EINHORN_FD_#{i}"] = fd.to_s}
+
+      # EINHORN_FDS is deprecated. It was originally an attempt to
+      # match Upstart's nominal internal support for space-separated
+      # FD lists, but nobody uses that in practice, and it makes
+      # finding individual FDs more difficult
       ENV['EINHORN_FDS'] = Einhorn::State.bind_fds.map(&:to_s).join(' ')
     end
 

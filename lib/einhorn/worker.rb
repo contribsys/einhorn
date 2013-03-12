@@ -80,30 +80,39 @@ module Einhorn
 
     def self.socket(number=nil)
       number ||= 0
-      fds = einhorn_fds
-      fds ? fds[number] : nil
+      einhorn_fd(number)
     end
 
     def self.socket!(number=nil)
       number ||= 0
 
-      unless fds = einhorn_fds
-        raise "No EINHORN_FDS provided in environment. Are you running under Einhorn?"
+      unless count = einhorn_fd_count
+        raise "No EINHORN_FD_COUNT provided in environment. Are you running under Einhorn?"
       end
 
-      unless number < fds.length
-        raise "Only #{fds.length} FDs available, but FD #{number} was requested"
+      unless number < count
+        raise "Only #{count} FDs available, but FD #{number} was requested"
       end
 
-      fds[number]
+      unless fd = einhorn_fd(number)
+        raise "No EINHORN_FD_#{number} provided in environment. That's pretty weird"
+      end
+
+      fd
     end
 
-    def self.einhorn_fds
-      unless raw_fds = ENV['EINHORN_FDS']
+    def self.einhorn_fd(n)
+      unless raw_fd = ENV["EINHORN_FD_#{n}"]
         return nil
       end
+      Integer(raw_fd)
+    end
 
-      raw_fds.split(' ').map {|fd| Integer(fd)}
+    def self.einhorn_fd_count
+      unless raw_count = ENV['EINHORN_FD_COUNT']
+        return 0
+      end
+      Integer(raw_count)
     end
 
     # Call this to handle graceful shutdown requests to your app.
