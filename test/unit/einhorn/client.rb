@@ -60,7 +60,7 @@ class ClientTest < Test::Unit::TestCase
     should "raise an error when deserializing invalid YAML" do
       invalid_serialized = "-%0A\t-"
       expected = [ArgumentError]
-      expected << Psych::SyntaxError if defined?(Psych) # 1.9
+      expected << Psych::SyntaxError if defined?(Psych::SyntaxError) # 1.9
 
       begin
         Einhorn::Client::Transport.deserialize_message(invalid_serialized)
