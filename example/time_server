@@ -16,7 +16,7 @@ require 'rubygems'
 require 'einhorn/worker'
 
 def einhorn_main
-  puts "Called with ENV['EINHORN_FD_1']: #{ENV['EINHORN_FD_1']}"
+  puts "Called with ENV['EINHORN_FD_0']: #{ENV['EINHORN_FD_0']}"
 
   fd_num = Einhorn::Worker.socket!
   socket = Socket.for_fd(fd_num)
