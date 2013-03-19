@@ -149,17 +149,17 @@ module Einhorn::Command
     def self.install_handlers
       Signal.trap("INT") do
         Einhorn::Command.signal_all("USR2", Einhorn::WorkerPool.workers)
-        Einhorn::State.respawn = false
+        Einhorn::Command.stop_respawning
       end
       Signal.trap("TERM") do
         Einhorn::Command.signal_all("TERM", Einhorn::WorkerPool.workers)
-        Einhorn::State.respawn = false
+        Einhorn::Command.stop_respawning
       end
       # Note that quit is a bit different, in that it will actually
       # make Einhorn quit without waiting for children to exit.
       Signal.trap("QUIT") do
         Einhorn::Command.signal_all("QUIT", Einhorn::WorkerPool.workers)
-        Einhorn::State.respawn = false
+        Einhorn::Command.stop_respawning
         exit(1)
       end
       Signal.trap("HUP") {Einhorn::Command.reload}
@@ -167,12 +167,12 @@ module Einhorn::Command
       Signal.trap("CHLD") {Einhorn::Event.break_loop}
       Signal.trap("USR2") do
         Einhorn::Command.signal_all("USR2", Einhorn::WorkerPool.workers)
-        Einhorn::State.respawn = false
+        Einhorn::Command.stop_respawning
       end
       at_exit do
         if Einhorn::State.kill_children_on_exit && Einhorn::TransientState.whatami == :master
           Einhorn::Command.signal_all("USR2", Einhorn::WorkerPool.workers)
-          Einhorn::State.respawn = false
+          Einhorn::Command.stop_respawning
         end
       end
     end
@@ -353,7 +353,7 @@ EOF
       signal = args[0] || "USR2"
 
       response = Einhorn::Command.signal_all(signal, Einhorn::WorkerPool.workers)
-      Einhorn::State.respawn = false
+      Einhorn::Command.stop_respawning
 
       "Einhorn is going down! #{response}"
     end

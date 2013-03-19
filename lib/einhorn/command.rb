@@ -334,6 +334,11 @@ module Einhorn
       end
     end
 
+    def self.stop_respawning
+      Einhorn::State.respawn = false
+      Einhorn::Event.break_loop
+    end
+
     def self.replenish
       return unless Einhorn::State.respawn
 
