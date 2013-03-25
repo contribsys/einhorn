@@ -147,25 +147,25 @@ module Einhorn::Command
 
     ## Signals
     def self.install_handlers
-      Signal.trap("INT") do
+      trap_async("INT") do
         Einhorn::Command.signal_all("USR2", Einhorn::WorkerPool.workers)
         Einhorn::Command.stop_respawning
       end
-      Signal.trap("TERM") do
+      trap_async("TERM") do
         Einhorn::Command.signal_all("TERM", Einhorn::WorkerPool.workers)
         Einhorn::Command.stop_respawning
       end
       # Note that quit is a bit different, in that it will actually
       # make Einhorn quit without waiting for children to exit.
-      Signal.trap("QUIT") do
+      trap_async("QUIT") do
         Einhorn::Command.signal_all("QUIT", Einhorn::WorkerPool.workers)
         Einhorn::Command.stop_respawning
         exit(1)
       end
-      Signal.trap("HUP") {Einhorn::Command.reload}
-      Signal.trap("ALRM") {Einhorn::Command.full_upgrade}
-      Signal.trap("CHLD") {Einhorn::Event.break_loop}
-      Signal.trap("USR2") do
+      trap_async("HUP") {Einhorn::Command.reload}
+      trap_async("ALRM") {Einhorn::Command.full_upgrade}
+      trap_async("CHLD") {}
+      trap_async("USR2") do
         Einhorn::Command.signal_all("USR2", Einhorn::WorkerPool.workers)
         Einhorn::Command.stop_respawning
       end
@@ -174,6 +174,16 @@ module Einhorn::Command
           Einhorn::Command.signal_all("USR2", Einhorn::WorkerPool.workers)
           Einhorn::Command.stop_respawning
         end
+      end
+    end
+
+    def self.trap_async(signal, &blk)
+      Signal.trap(signal) do
+        # We try to do as little work in the signal handler as
+        # possible. This avoids potential races between e.g. iteration
+        # and mutation.
+        Einhorn::Event.break_loop
+        Einhorn::Event.register_signal_action(&blk)
       end
     end
 
