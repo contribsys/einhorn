@@ -4,6 +4,7 @@ module Einhorn
   module Event
     @@loopbreak_reader = nil
     @@loopbreak_writer = nil
+    @@signal_actions = []
     @@readable = {}
     @@writeable = {}
     @@timers = {}
@@ -45,6 +46,10 @@ module Einhorn
       persistent_descriptors.each do |descriptor_state|
         Einhorn::Event::Persistent.from_state(descriptor_state)
       end
+    end
+
+    def self.register_signal_action(&blk)
+      @@signal_actions << blk
     end
 
     def self.register_readable(reader)
@@ -95,6 +100,7 @@ module Einhorn
     end
 
     def self.loop_once
+      run_signal_actions
       run_selectables
       run_timers
     end
@@ -105,6 +111,16 @@ module Einhorn
         expires_at - Time.now
       else
         nil
+      end
+    end
+
+    def self.run_signal_actions
+      # Note thah @@signal_actions can be mutated in the signal
+      # handlers. Since it's just an array we push to/shift from, we
+      # can be sure there's no race (such as adding hash keys during
+      # iteration.)
+      while blk = @@signal_actions.shift
+        blk.call
       end
     end
 
