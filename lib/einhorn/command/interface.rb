@@ -162,8 +162,11 @@ module Einhorn::Command
         Einhorn::Command.stop_respawning
         exit(1)
       end
-      trap_async("HUP") {Einhorn::Command.reload}
-      trap_async("ALRM") {Einhorn::Command.full_upgrade}
+      trap_async("HUP") {Einhorn::Command.full_upgrade}
+      trap_async("ALRM") do
+        Einhorn.log_error("Upgrading using SIGALRM is deprecated. Please switch to SIGHUP")
+        Einhorn::Command.full_upgrade
+      end
       trap_async("CHLD") {}
       trap_async("USR2") do
         Einhorn::Command.signal_all("USR2", Einhorn::WorkerPool.workers)
