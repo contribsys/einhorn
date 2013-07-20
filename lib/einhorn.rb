@@ -5,8 +5,12 @@ require 'set'
 require 'socket'
 require 'tmpdir'
 require 'yaml'
+require 'little-plugger'
 
 module Einhorn
+  extend LittlePlugger
+  module Plugins; end
+
   module AbstractState
     def default_state; raise NotImplementedError.new('Override in extended modules'); end
     def state; @state ||= default_state; end
@@ -321,6 +325,8 @@ module Einhorn
 
     while Einhorn::State.respawn || Einhorn::State.children.size > 0
       log_debug("Entering event loop")
+      Einhorn.plugins.values.map(&:on_respawn)
+
       # All of these are non-blocking
       Einhorn::Command.reap
       Einhorn::Command.replenish
@@ -329,6 +335,8 @@ module Einhorn
       # Make sure to do this last, as it's blocking.
       Einhorn::Event.loop_once
     end
+
+    Einhorn.plugins.values.map(&:on_exit)
   end
 end
 
