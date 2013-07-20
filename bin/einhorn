@@ -275,7 +275,7 @@ if true # $0 == __FILE__
       Einhorn::Command.louder(false)
     end
 
-    Einhorn.plugins.values.map { |plugin| plugin.optparse(opts) }
+    Einhorn.plugins_send(:optparse, opts)
 
     opts.on('--nice MASTER[:WORKER=0][:RENICE_CMD=/usr/bin/renice]', 'Unix nice level at which to run the einhorn processes. If not running as root, make sure to ulimit -e as appopriate.') do |nice|
       master, worker, renice_cmd = nice.split(':')
@@ -309,7 +309,7 @@ if true # $0 == __FILE__
     exit(1)
   end
 
-  Einhorn.plugins.values.map(&:post_optparse)
+  Einhorn.plugins_send(:post_optparse)
 
   ret = Einhorn.run
   begin

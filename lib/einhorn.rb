@@ -11,6 +11,12 @@ module Einhorn
   extend LittlePlugger
   module Plugins; end
 
+  def self.plugins_send(sym, *args)
+    plugins.values.each do |plugin|
+      plugin.send(sym, *args) if plugin.respond_to? sym
+    end
+  end
+
   module AbstractState
     def default_state; raise NotImplementedError.new('Override in extended modules'); end
     def state; @state ||= default_state; end
@@ -325,7 +331,7 @@ module Einhorn
 
     while Einhorn::State.respawn || Einhorn::State.children.size > 0
       log_debug("Entering event loop")
-      Einhorn.plugins.values.map(&:on_respawn)
+      Einhorn.plugins_send(:respawn)
 
       # All of these are non-blocking
       Einhorn::Command.reap
@@ -336,7 +342,7 @@ module Einhorn
       Einhorn::Event.loop_once
     end
 
-    Einhorn.plugins.values.map(&:on_exit)
+    Einhorn.plugins_send(:exit)
   end
 end
 
