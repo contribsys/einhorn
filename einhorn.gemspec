@@ -15,8 +15,7 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
 
   gem.add_development_dependency('rake')
-  gem.add_development_dependency('shoulda', '~> 3.4.0')
-  gem.add_development_dependency('mocha', '~> 0.3.2')
-  gem.add_development_dependency('activesupport', '~> 3.0')
+  gem.add_development_dependency('minitest', '< 5.0')
+  gem.add_development_dependency('mocha', '~> 0.13')
   gem.version       = Einhorn::VERSION
 end

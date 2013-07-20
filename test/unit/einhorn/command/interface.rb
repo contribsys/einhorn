@@ -1,12 +1,12 @@
-require File.expand_path(File.join(File.dirname(__FILE__), '../../../test_helper'))
+require File.expand_path(File.join(File.dirname(__FILE__), '../../../_lib'))
 
 require 'einhorn'
 
-class InterfaceTest < Test::Unit::TestCase
+class InterfaceTest < EinhornTestCase
   include Einhorn::Command
 
-  context "when a command is received" do
-    should "call that command" do
+  describe "when a command is received" do
+    it "calls that command" do
       conn = stub(:log_debug => nil)
       conn.expects(:write).once.with do |message|
         # Remove trailing newline
@@ -22,8 +22,8 @@ class InterfaceTest < Test::Unit::TestCase
     end
   end
 
-  context "when an unrecognized command is received" do
-    should "call the unrecognized_command method" do
+  describe "when an unrecognized command is received" do
+    it "calls the unrecognized_command method" do
       conn = stub(:log_debug => nil)
       Interface.expects(:unrecognized_command).once
       request = {
@@ -33,8 +33,8 @@ class InterfaceTest < Test::Unit::TestCase
     end
   end
 
-  context "when a worker ack is received" do
-    should "register ack and close the connection" do
+  describe "when a worker ack is received" do
+    it "registers ack and close the connection" do
       conn = stub(:log_debug => nil)
       conn.expects(:close).once
       conn.expects(:write).never

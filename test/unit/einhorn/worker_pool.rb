@@ -1,8 +1,8 @@
-require File.expand_path(File.join(File.dirname(__FILE__), '../../test_helper'))
+require File.expand_path(File.join(File.dirname(__FILE__), '../../_lib'))
 
 require 'einhorn'
 
-class WorkerPoolTest < Test::Unit::TestCase
+class WorkerPoolTest < EinhornTestCase
   def stub_children
     Einhorn::State.stubs(:children).returns(
       1234 => {:type => :worker, :signaled => Set.new(['INT'])},
@@ -11,12 +11,12 @@ class WorkerPoolTest < Test::Unit::TestCase
       )
   end
 
-  context "#workers_with_state" do
-    setup do
+  describe "#workers_with_state" do
+    before do
       stub_children
     end
 
-    should "select only the workers" do
+    it "selects only the workers" do
       workers_with_state = Einhorn::WorkerPool.workers_with_state
       # Sort only needed for Ruby 1.8
       assert_equal([
@@ -26,12 +26,12 @@ class WorkerPoolTest < Test::Unit::TestCase
     end
   end
 
-  context "#unsignaled_workers" do
-    setup do
+  describe "#unsignaled_workers" do
+    before do
       stub_children
     end
 
-    should "selects unsignaled workers" do
+    it "selects unsignaled workers" do
       unsignaled_workers = Einhorn::WorkerPool.unsignaled_workers
       assert_equal([1236], unsignaled_workers)
     end

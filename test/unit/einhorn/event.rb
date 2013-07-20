@@ -1,4 +1,4 @@
-require File.expand_path(File.join(File.dirname(__FILE__), '../../test_helper'))
+require File.expand_path(File.join(File.dirname(__FILE__), '../../_lib'))
 
 require 'set'
 require 'einhorn'
@@ -13,17 +13,17 @@ module Einhorn::Event
   end
 end
 
-class EventTest < Test::Unit::TestCase
-  context "when running the event loop" do
-    setup do
+class EventTest < EinhornTestCase
+  describe "when running the event loop" do
+    before do
       Einhorn::Event.reset
     end
 
-    teardown do
+    after do
       Einhorn::Event.reset
     end
 
-    should "select on readable descriptors" do
+    it "selects on readable descriptors" do
       sock1 = mock(:fileno => 4)
       sock2 = mock(:fileno => 5)
 
@@ -40,7 +40,7 @@ class EventTest < Test::Unit::TestCase
       Einhorn::Event.loop_once
     end
 
-    should "select on writeable descriptors" do
+    it "selects on writeable descriptors" do
       sock1 = mock(:fileno => 4)
       sock2 = mock(:fileno => 5)
 
@@ -60,7 +60,7 @@ class EventTest < Test::Unit::TestCase
       Einhorn::Event.loop_once
     end
 
-    should "run callbacks for ready selectables" do
+    it "runs callbacks for ready selectables" do
       sock1 = mock(:fileno => 4)
       sock2 = mock(:fileno => 5)
 
