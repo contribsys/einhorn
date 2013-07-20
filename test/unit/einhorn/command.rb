@@ -1,18 +1,18 @@
-require File.expand_path(File.join(File.dirname(__FILE__), '../../test_helper'))
+require File.expand_path(File.join(File.dirname(__FILE__), '../../_lib'))
 
 require 'einhorn'
 
-class CommandTest < Test::Unit::TestCase
+class CommandTest < EinhornTestCase
   include Einhorn
 
-  context "when running quieter" do
-    should "increase the verbosity threshold" do
+  describe "when running quieter" do
+    it "increases the verbosity threshold" do
       Einhorn::State.stubs(:verbosity => 1)
       Einhorn::State.expects(:verbosity=).once.with(2).returns(2)
       Command.quieter
     end
 
-    should "max out at 2" do
+    it "maxes out at 2" do
       Einhorn::State.stubs(:verbosity => 2)
       Einhorn::State.expects(:verbosity=).never
       Command.quieter
