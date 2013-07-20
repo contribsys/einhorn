@@ -5,10 +5,11 @@ require 'set'
 require 'socket'
 require 'tmpdir'
 require 'yaml'
-require 'little-plugger'
+
+require 'einhorn/third/little-plugger'
 
 module Einhorn
-  extend LittlePlugger
+  extend Third::LittlePlugger
   module Plugins; end
 
   def self.plugins_send(sym, *args)

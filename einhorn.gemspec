@@ -14,8 +14,6 @@ Gem::Specification.new do |gem|
   gem.name          = "einhorn"
   gem.require_paths = ["lib"]
 
-  gem.add_dependency('little-plugger')
-
   gem.add_development_dependency('rake')
   gem.add_development_dependency('shoulda', '~> 3.4.0')
   gem.add_development_dependency('mocha')
