@@ -27,16 +27,19 @@ def einhorn_main
     puts "Goodbye from #{$$}"
     exit(0)
   end
-  Einhorn::Worker.ack!
+  Einhorn::Worker.ack!(:env, true)
 
   # Real work happens here.
   begin
     while true
+      Einhorn::Worker.send_state('listening')
       accepted, _ = socket.accept
+      Einhorn::Worker.send_state('working')
       accepted.write("[#{$$}] The current time is: #{Time.now}!\n")
       accepted.close
     end
-  rescue Exception
+  rescue Exception => e
+    puts e.inspect
   end
 end
 

@@ -33,6 +33,17 @@ module Einhorn
       end
     end
 
+    def self.send_state(state)
+      unless @client
+        raise "No client set; Did you call 'ack'?"
+      end
+      @client.command({
+        'command' => 'worker:state',
+        'pid'     => $$,
+        'state'   => state
+      })
+    end
+
     # Call this once your app is up and running in a good state.
     # Arguments:
     #
@@ -41,16 +52,27 @@ module Einhorn
     #   :fd:         Just use the file descriptor in ENV['EINHORN_SOCK_FD'].
     #                Must run the master with the -g flag. This is mostly
     #                useful if you don't have a nice library like Einhorn::Worker.
-    #                Then @arg being true causes the FD to be left open after ACK;
-    #                otherwise it is closed.
-    #   :direct:     Provide the path to the command socket in @arg.
+    #   :direct:     Provide the path to the command socket in @options.
+    #
+    # Accepts the following options in @options:
+    #
+    #   :keep_open:  If true, keep the command socket open to send further
+    #                commands to the einhorn master.
+    #   :path        With @discovery == :direct, the socket path to use.
     #
     # TODO: add a :fileno option? Easy to implement; not sure if it'd
     # be useful for anything. Maybe if it's always fd 3, because then
     # the user wouldn't have to provide an arg.
-    def self.ack!(discovery=:env, arg=nil)
+    def self.ack!(discovery=:env, options=nil)
       ensure_worker!
-      close_after_use = true
+
+      if options && !options.is_a?(Hash)
+        if discover == :fd
+          options = {:keep_open => options}
+        elsif discover == :direct
+          options = {:path => options}
+        end
+      end
 
       case discovery
       when :env
@@ -61,20 +83,25 @@ module Einhorn
 
         fd = Integer(fd_str)
         client = Einhorn::Client.for_fd(fd)
-        close_after_use = false if arg
       when :direct
-        socket = arg
+        socket = options[:path]
+        raise ":direct discover specified, but no path given in #{options.inspect}" unless socket
         client = Einhorn::Client.for_path(socket)
       else
         raise "Unrecognized socket discovery mechanism: #{discovery.inspect}. Must be one of :filesystem, :argv, or :direct"
       end
 
       client.command({
-          'command' => 'worker:ack',
-          'pid' => $$
-        })
+        'command' => 'worker:ack',
+        'pid' => $$,
+        'keep-open' => options[:keep_open]
+      })
 
-      client.close if close_after_use
+      if options[:keep_open]
+        @client = client
+      else
+        client.close
+      end
       true
     end
 
