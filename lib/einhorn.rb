@@ -332,7 +332,7 @@ module Einhorn
 
     while Einhorn::State.respawn || Einhorn::State.children.size > 0
       log_debug("Entering event loop")
-      Einhorn.plugins_send(:respawn)
+      Einhorn.plugins_send(:event_loop)
 
       # All of these are non-blocking
       Einhorn::Command.reap
