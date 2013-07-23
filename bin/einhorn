@@ -187,6 +187,7 @@ if true # $0 == __FILE__
   Einhorn::TransientState.script_name = $0
   Einhorn::TransientState.argv = ARGV.dup
   Einhorn::TransientState.environ = ENV.to_hash
+  Einhorn.initialize_plugins
 
   optparse = OptionParser.new do |opts|
     opts.on('-b ADDR', '--bind ADDR', 'Bind an address and add the corresponding FD via the environment') do |addr|
@@ -274,6 +275,8 @@ if true # $0 == __FILE__
       Einhorn::Command.louder(false)
     end
 
+    Einhorn.plugins_send(:optparse, opts)
+
     opts.on('--nice MASTER[:WORKER=0][:RENICE_CMD=/usr/bin/renice]', 'Unix nice level at which to run the einhorn processes. If not running as root, make sure to ulimit -e as appopriate.') do |nice|
       master, worker, renice_cmd = nice.split(':')
       master = Integer(master) if master
@@ -305,6 +308,8 @@ if true # $0 == __FILE__
     puts optparse
     exit(1)
   end
+
+  Einhorn.plugins_send(:post_optparse)
 
   ret = Einhorn.run
   begin
