@@ -8,6 +8,17 @@
 
 module Einhorn::Plugins
   module ExamplePlugin
+    # If a State module is defined, its contents will be passed to new
+    # einhorn processes when einhorn is reloaded
+    module State
+      extend Einhorn::AbstractState
+      def self.default_state
+        {
+          :yay => nil
+        }
+      end
+    end
+
     def self.initialize_example_plugin
       # The initializer method must be named `initialize_##[plugin_name]',
       # where [plugin_name] is the name of the plugin module or class in
@@ -16,16 +27,15 @@ module Einhorn::Plugins
     end
 
     def self.optparse(opts)
-      @options = {}
       opts.on("--my-option X", "Patch einhorn with additional options!") do |x|
-        @options[:yay] = x
+        State.yay = x
       end
     end
 
     def self.post_optparse
       # Called after all options native to einhorn or patched by any plugins
-      # are parsed.
-      @required_x = @options.fetch(:yay)
+      # are parsed. Good place to do argument validation
+      raise "Argument --my-option is required" unless State.yay
     end
 
     def self.event_loop

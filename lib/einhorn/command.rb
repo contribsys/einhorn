@@ -157,10 +157,15 @@ module Einhorn
       descriptor_state = Einhorn::Event.persistent_descriptors.map do |descriptor|
         descriptor.to_state
       end
+      plugin_state = {}
+      Einhorn.plugins.each do |name, plugin|
+        plugin_state[name] = plugin::State.state if plugin.const_defined?(:State)
+      end
 
       {
         :state => global_state,
-        :persistent_descriptors => descriptor_state
+        :persistent_descriptors => descriptor_state,
+        :plugins => plugin_state
       }
     end
 

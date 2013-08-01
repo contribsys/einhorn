@@ -41,16 +41,16 @@ class EinhornTest < EinhornTestCase
       Einhorn::State.stubs(:default_state).returns(:baz => 23, :foo => 1)
       old_state = {:foo => 2, :bar => 2}
 
-      updated_state, message = Einhorn.update_state(old_state)
+      updated_state, message = Einhorn.update_state(Einhorn::State, 'einhorn', old_state)
       assert_equal({:baz => 23, :foo => 2}, updated_state)
-      assert_match(/State format has changed/, message)
+      assert_match(/State format for einhorn has changed/, message)
     end
 
     it 'does not change the state if the format has not changed' do
       Einhorn::State.stubs(:default_state).returns(:baz => 23, :foo => 1)
       old_state = {:baz => 14, :foo => 1234}
 
-      updated_state, message = Einhorn.update_state(old_state)
+      updated_state, message = Einhorn.update_state(Einhorn::State, 'einhorn', old_state)
       assert_equal({:baz => 14, :foo => 1234}, updated_state)
       assert(message.nil?)
     end
