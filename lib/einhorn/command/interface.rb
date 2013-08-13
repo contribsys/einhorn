@@ -202,34 +202,28 @@ module Einhorn::Command
     end
 
     def self.process_command(conn, command)
-      response = generate_response(conn, command)
-      if !response.nil?
-        send_message(conn, response)
+      message = generate_message(conn, command)
+      if !message.nil?
+        send_message(conn, message)
       else
         conn.log_debug("Got back nil response, so not responding to command.")
       end
     end
 
     def self.send_message(conn, response)
-      if response.kind_of?(String)
-        response = {'message' => response}
-      end
+      response = {'message' => response}
       Einhorn::Client::Transport.send_message(conn, response)
     end
 
-    def self.generate_response(conn, command)
+    def self.generate_message(conn, command)
       begin
         request = Einhorn::Client::Transport.deserialize_message(command)
       rescue ArgumentError => e
-        return {
-          'message' => "Could not parse command: #{e}"
-        }
+        "Could not parse command: #{e}"
       end
 
       unless command_name = request['command']
-        return {
-          'message' => 'No "command" parameter provided; not sure what you want me to do.'
-        }
+        'No "command" parameter provided; not sure what you want me to do.'
       end
 
       if command_spec = @@commands[command_name]
