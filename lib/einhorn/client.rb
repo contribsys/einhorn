@@ -29,8 +29,6 @@ module Einhorn
       end
     end
 
-    @@responseless_commands = Set.new(['worker:ack'])
-
     def self.for_path(path_to_socket)
       socket = UNIXSocket.open(path_to_socket)
       self.new(socket)
@@ -45,13 +43,12 @@ module Einhorn
       @socket = socket
     end
 
-    def command(command_hash)
+    def send_command(command_hash)
       Transport.send_message(@socket, command_hash)
-      Transport.receive_message(@socket) if expect_response?(command_hash)
     end
 
-    def expect_response?(command_hash)
-      !@@responseless_commands.include?(command_hash['command'])
+    def receive_message
+      Transport.receive_message(@socket)
     end
 
     def close

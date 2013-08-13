@@ -10,9 +10,31 @@ require 'einhorn'
 
 module Einhorn
   class EinhornSH
+
     def initialize(path_to_socket)
       @path_to_socket = path_to_socket
+      @request_id = 0
       reconnect
+    end
+
+    def send_command(hash)
+      begin
+        @client.send_command(hash)
+        while response = @client.receive_message
+          if response.kind_of?(Hash)
+            yield response['message']
+            return unless response['wait']
+          else
+            puts "Invalid response type #{response.class}: #{response.inspect}"
+          end
+        end
+      rescue Errno::EPIPE => e
+        emit("einhornsh: Error communicating with Einhorn: #{e} (#{e.class})")
+        emit("einhornsh: Attempting to reconnect...")
+        reconnect
+
+        retry
+      end
     end
 
     def run
@@ -26,23 +48,14 @@ module Einhorn
           emit("Goodbye!")
           return
         end
-
-        begin
-          response = @client.command({'command' => command, 'args' => args})
-        rescue Errno::EPIPE => e
-          emit("einhornsh: Error communicating with Einhorn: #{e} (#{e.class})")
-          emit("einhornsh: Attempting to reconnect...")
-          reconnect
-
-          retry
-        end
-
-        if response.kind_of?(Hash)
-          puts response['message']
-        else
-          puts "Invalid response type #{response.class}: #{response.inspect}"
+        send_command({'id' => request_id, 'command' => command, 'args' => args}) do |message|
+          puts message
         end
       end
+    end
+
+    def request_id
+      @request_id += 1
     end
 
     def parse_command(line)
@@ -69,8 +82,9 @@ EOF
     end
 
     def ehlo
-      response = @client.command('command' => 'ehlo', 'user' => ENV['USER'])
-      emit(response['message'])
+      send_command({'command' => "ehlo", 'user' => ENV['USER']}) do |message|
+        emit(message)
+      end
     end
 
     def self.emit(message=nil, force=false)

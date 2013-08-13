@@ -69,7 +69,7 @@ module Einhorn
         raise "Unrecognized socket discovery mechanism: #{discovery.inspect}. Must be one of :filesystem, :argv, or :direct"
       end
 
-      client.command({
+      client.send_command({
           'command' => 'worker:ack',
           'pid' => $$
         })
