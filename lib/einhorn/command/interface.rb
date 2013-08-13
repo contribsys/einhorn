@@ -210,15 +210,25 @@ module Einhorn::Command
 
       message = generate_message(conn, request)
       if !message.nil?
-        send_message(conn, message, request['id'])
+        send_message(conn, message, request['id'], true)
       else
         conn.log_debug("Got back nil response, so not responding to command.")
       end
     end
 
-    def self.send_message(conn, message, request_id=nil)
+    def self.send_tagged_message(tag, message, last=false)
+      Einhorn::Event.connections.each do |conn|
+        if id = conn.subscription(tag)
+          self.send_message(conn, message, id, last)
+          conn.unsubscribe(tag) if last
+        end
+      end
+    end
+
+    def self.send_message(conn, message, request_id=nil, last=false)
       response = {'message' => message}
       response['request_id'] = request_id if request_id
+      response['wait'] = true unless last
       Einhorn::Client::Transport.send_message(conn, response)
     end
 
@@ -298,7 +308,7 @@ EOF
       # In the normal case, this will do a write
       # synchronously. Otherwise, the bytes will be stuck into the
       # buffer and lost upon reload.
-      send_message(conn, 'Reloading, as commanded', request['id'])
+      send_message(conn, 'Reloading, as commanded', request['id'], true)
       Einhorn::Command.reload
     end
 
@@ -319,11 +329,11 @@ EOF
     end
 
     command 'upgrade', 'Upgrade all Einhorn workers. This may result in Einhorn reloading its own code as well.' do |conn, request|
-      # TODO: send confirmation when this is done
-      send_message(conn, 'Upgrading, as commanded', request['id'])
-      # This or may not return
+      conn.subscribe("upgrade", request['id'])
+      Einhorn.send_tagged_message("upgrade", "Upgrading, as commanded")
+      # This doesn't return if app is preloaded
       Einhorn::Command.full_upgrade
-      nil
+      "Upgrade done"
     end
 
     command 'signal', 'Send one or more signals to all workers (args: SIG1 [SIG2 ...])' do |conn, request|

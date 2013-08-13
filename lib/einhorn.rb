@@ -176,6 +176,10 @@ module Einhorn
     $stderr.puts("#{log_tag} ERROR: #{msg}") if Einhorn::State.verbosity <= 2
   end
 
+  def self.send_tagged_message(tag, message, last=false)
+    Einhorn::Command::Interface.send_tagged_message(tag, message, last)
+  end
+
   private
 
   def self.log_tag
@@ -348,6 +352,8 @@ module Einhorn
       Einhorn::Command.upgrade_workers
       Einhorn::State.reloading_for_preload_upgrade = false
     end
+
+    Einhorn.send_tagged_message("upgrade", "Upgrade and preload done", true)
 
     while Einhorn::State.respawn || Einhorn::State.children.size > 0
       log_debug("Entering event loop")
