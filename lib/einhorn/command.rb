@@ -304,7 +304,7 @@ module Einhorn
         Einhorn.log_info("Currently upgrading (#{Einhorn::WorkerPool.ack_count} / #{Einhorn::WorkerPool.ack_target} ACKs; bumping version and starting over)...", :upgrade)
       else
         Einhorn::State.upgrading = true
-        Einhorn.log_info("Starting upgrade to #{Einhorn::State.version}...", :upgrade)
+        Einhorn.log_info("Starting upgrade from version #{Einhorn::State.version}...", :upgrade)
       end
 
       # Reset this, since we've just upgraded to a new universe (I'm
