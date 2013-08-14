@@ -169,11 +169,13 @@ module Einhorn
   def self.log_debug(msg)
     $stderr.puts("#{log_tag} DEBUG: #{msg}") if Einhorn::State.verbosity <= 0
   end
-  def self.log_info(msg)
+  def self.log_info(msg, tag=nil)
     $stderr.puts("#{log_tag} INFO: #{msg}") if Einhorn::State.verbosity <= 1
+    self.send_tagged_message(tag, msg) if tag
   end
-  def self.log_error(msg)
+  def self.log_error(msg, tag=nil)
     $stderr.puts("#{log_tag} ERROR: #{msg}") if Einhorn::State.verbosity <= 2
+    self.send_tagged_message(tag, "ERROR: #{msg}") if tag
   end
 
   def self.send_tagged_message(tag, message, last=false)
@@ -225,20 +227,20 @@ module Einhorn
       begin
         # If it's not going to be requireable, then load it.
         if !path.end_with?('.rb') && File.exists?(path)
-          log_info("Loading #{path} (if this hangs, make sure your code can be properly loaded as a library)")
+          log_info("Loading #{path} (if this hangs, make sure your code can be properly loaded as a library)", :upgrade)
           load path
         else
-          log_info("Requiring #{path} (if this hangs, make sure your code can be properly loaded as a library)")
+          log_info("Requiring #{path} (if this hangs, make sure your code can be properly loaded as a library)", :upgrade)
           require path
         end
       rescue Exception => e
-        log_info("Proceeding with postload -- could not load #{path}: #{e} (#{e.class})\n  #{e.backtrace.join("\n  ")}")
+        log_info("Proceeding with postload -- could not load #{path}: #{e} (#{e.class})\n  #{e.backtrace.join("\n  ")}", :upgrade)
       else
         if defined?(einhorn_main)
-          log_info("Successfully loaded #{path}")
+          log_info("Successfully loaded #{path}", :upgrade)
           Einhorn::TransientState.preloaded = true
         else
-          log_info("Proceeding with postload -- loaded #{path}, but no einhorn_main method was defined")
+          log_info("Proceeding with postload -- loaded #{path}, but no einhorn_main method was defined", :upgrade)
         end
       end
     end
@@ -352,8 +354,6 @@ module Einhorn
       Einhorn::Command.upgrade_workers
       Einhorn::State.reloading_for_preload_upgrade = false
     end
-
-    Einhorn.send_tagged_message("upgrade", "Upgrade and preload done", true)
 
     while Einhorn::State.respawn || Einhorn::State.children.size > 0
       log_debug("Entering event loop")

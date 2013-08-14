@@ -337,10 +337,10 @@ EOF
       # ids or subscriptions. Everything else is sent tagged with request id
       # for new clients.
       send_message(conn, 'Upgrading, as commanded', request['id'])
-      conn.subscribe("upgrade", request['id'])
-      # This doesn't return if app is preloaded
+      conn.subscribe(:upgrade, request['id'])
+      # If the app is preloaded this doesn't return.
       Einhorn::Command.full_upgrade
-      Einhorn.send_tagged_message("upgrade", "Upgrade done", true)
+      nil
     end
 
     command 'signal', 'Send one or more signals to all workers (args: SIG1 [SIG2 ...])' do |conn, request|
