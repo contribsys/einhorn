@@ -43,7 +43,9 @@ module Einhorn::Event
     end
 
     def subscribe(tag, request_id)
-      @subscriptions[tag] = request_id
+      if request_id
+        @subscriptions[tag] = request_id
+      end
     end
 
     def subscription(tag)

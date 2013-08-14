@@ -226,9 +226,13 @@ module Einhorn::Command
     end
 
     def self.send_message(conn, message, request_id=nil, last=false)
-      response = {'message' => message}
-      response['request_id'] = request_id if request_id
-      response['wait'] = true unless last
+      if request_id
+        response = {'message' => message, 'request_id' => request_id }
+        response['wait'] = true unless last
+      else
+        # support old-style protocol
+        response = {'message' => message}
+      end
       Einhorn::Client::Transport.send_message(conn, response)
     end
 
@@ -329,11 +333,14 @@ EOF
     end
 
     command 'upgrade', 'Upgrade all Einhorn workers. This may result in Einhorn reloading its own code as well.' do |conn, request|
+      # send first message directly for old clients that don't support request
+      # ids or subscriptions. Everything else is sent tagged with request id
+      # for new clients.
+      send_message(conn, 'Upgrading, as commanded', request['id'])
       conn.subscribe("upgrade", request['id'])
-      Einhorn.send_tagged_message("upgrade", "Upgrading, as commanded")
       # This doesn't return if app is preloaded
       Einhorn::Command.full_upgrade
-      "Upgrade done"
+      Einhorn.send_tagged_message("upgrade", "Upgrade done", true)
     end
 
     command 'signal', 'Send one or more signals to all workers (args: SIG1 [SIG2 ...])' do |conn, request|
