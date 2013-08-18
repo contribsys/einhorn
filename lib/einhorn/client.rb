@@ -7,6 +7,9 @@ module Einhorn
     # Keep this in this file so client can be loaded entirely
     # standalone by user code.
     module Transport
+
+      ParseError = defined?(Psych::SyntaxError) ? Psych::SyntaxError : ArgumentError
+
       def self.send_message(socket, message)
         line = serialize_message(message)
         socket.write(line)

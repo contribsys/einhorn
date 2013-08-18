@@ -204,8 +204,11 @@ module Einhorn::Command
     def self.process_command(conn, command)
       begin
         request = Einhorn::Client::Transport.deserialize_message(command)
-      rescue ArgumentError => e
-        return "Could not parse command: #{e}"
+      rescue Einhorn::Client::Transport::ParseError
+      end
+      unless request.kind_of?(Hash)
+        send_message(conn, "Could not parse command")
+        return
       end
 
       message = generate_message(conn, request)
