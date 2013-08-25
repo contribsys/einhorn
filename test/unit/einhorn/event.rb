@@ -24,8 +24,8 @@ class EventTest < EinhornTestCase
     end
 
     it "selects on readable descriptors" do
-      sock1 = mock(:fileno => 4)
-      sock2 = mock(:fileno => 5)
+      sock1 = stub(:fileno => 4)
+      sock2 = stub(:fileno => 5)
 
       conn1 = Einhorn::Event::Connection.open(sock1)
       conn2 = Einhorn::Event::Connection.open(sock2)
@@ -41,8 +41,8 @@ class EventTest < EinhornTestCase
     end
 
     it "selects on writeable descriptors" do
-      sock1 = mock(:fileno => 4)
-      sock2 = mock(:fileno => 5)
+      sock1 = stub(:fileno => 4)
+      sock2 = stub(:fileno => 5)
 
       conn1 = Einhorn::Event::Connection.open(sock1)
       conn2 = Einhorn::Event::Connection.open(sock2)
@@ -61,8 +61,8 @@ class EventTest < EinhornTestCase
     end
 
     it "runs callbacks for ready selectables" do
-      sock1 = mock(:fileno => 4)
-      sock2 = mock(:fileno => 5)
+      sock1 = stub(:fileno => 4)
+      sock2 = stub(:fileno => 5)
 
       conn1 = Einhorn::Event::Connection.open(sock1)
       conn2 = Einhorn::Event::Connection.open(sock2)

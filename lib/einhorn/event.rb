@@ -7,6 +7,7 @@ module Einhorn
     @@signal_actions = []
     @@readable = {}
     @@writeable = {}
+    @@connections = {}
     @@timers = {}
 
     def self.cloexec!(fd)
@@ -86,6 +87,18 @@ module Einhorn
       end.map {|io, writers| io}
       Einhorn.log_debug("Writeable fds are #{writers.inspect}")
       writers
+    end
+
+    def self.register_connection(connection, fd)
+      @@connections[fd] = connection
+    end
+
+    def self.deregister_connection(fd)
+      @@connections.delete(fd)
+    end
+
+    def self.connections
+      @@connections.values
     end
 
     def self.register_timer(timer)

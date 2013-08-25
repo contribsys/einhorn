@@ -7,6 +7,9 @@ module Einhorn
     # Keep this in this file so client can be loaded entirely
     # standalone by user code.
     module Transport
+
+      ParseError = defined?(Psych::SyntaxError) ? Psych::SyntaxError : ArgumentError
+
       def self.send_message(socket, message)
         line = serialize_message(message)
         socket.write(line)
@@ -29,8 +32,6 @@ module Einhorn
       end
     end
 
-    @@responseless_commands = Set.new(['worker:ack'])
-
     def self.for_path(path_to_socket)
       socket = UNIXSocket.open(path_to_socket)
       self.new(socket)
@@ -45,13 +46,12 @@ module Einhorn
       @socket = socket
     end
 
-    def command(command_hash)
+    def send_command(command_hash)
       Transport.send_message(@socket, command_hash)
-      Transport.receive_message(@socket) if expect_response?(command_hash)
     end
 
-    def expect_response?(command_hash)
-      !@@responseless_commands.include?(command_hash['command'])
+    def receive_message
+      Transport.receive_message(@socket)
     end
 
     def close
