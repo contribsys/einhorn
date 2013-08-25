@@ -301,10 +301,10 @@ module Einhorn
 
     def self.upgrade_workers
       if Einhorn::State.upgrading
-        Einhorn.log_info("Currently upgrading (#{Einhorn::WorkerPool.ack_count} / #{Einhorn::WorkerPool.ack_target} ACKs; bumping version and starting over)...")
+        Einhorn.log_info("Currently upgrading (#{Einhorn::WorkerPool.ack_count} / #{Einhorn::WorkerPool.ack_target} ACKs; bumping version and starting over)...", :upgrade)
       else
         Einhorn::State.upgrading = true
-        Einhorn.log_info("Starting upgrade to #{Einhorn::State.version}...")
+        Einhorn.log_info("Starting upgrade from version #{Einhorn::State.version}...", :upgrade)
       end
 
       # Reset this, since we've just upgraded to a new universe (I'm
@@ -323,7 +323,8 @@ module Einhorn
 
       if Einhorn::State.upgrading && acked >= target
         Einhorn::State.upgrading = false
-        Einhorn.log_info("Upgrade to version #{Einhorn::State.version} complete.")
+        Einhorn.log_info("Upgrade to version #{Einhorn::State.version} complete.", :upgrade)
+        Einhorn.send_tagged_message(:upgrade, "Upgrade done", true)
       end
 
       old_workers = Einhorn::WorkerPool.old_workers

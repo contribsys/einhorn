@@ -202,38 +202,50 @@ module Einhorn::Command
     end
 
     def self.process_command(conn, command)
-      response = generate_response(conn, command)
-      if !response.nil?
-        send_message(conn, response)
+      begin
+        request = Einhorn::Client::Transport.deserialize_message(command)
+      rescue Einhorn::Client::Transport::ParseError
+      end
+      unless request.kind_of?(Hash)
+        send_message(conn, "Could not parse command")
+        return
+      end
+
+      message = generate_message(conn, request)
+      if !message.nil?
+        send_message(conn, message, request['id'], true)
       else
         conn.log_debug("Got back nil response, so not responding to command.")
       end
     end
 
-    def self.send_message(conn, response)
-      if response.kind_of?(String)
-        response = {'message' => response}
+    def self.send_tagged_message(tag, message, last=false)
+      Einhorn::Event.connections.each do |conn|
+        if id = conn.subscription(tag)
+          self.send_message(conn, message, id, last)
+          conn.unsubscribe(tag) if last
+        end
+      end
+    end
+
+    def self.send_message(conn, message, request_id=nil, last=false)
+      if request_id
+        response = {'message' => message, 'request_id' => request_id }
+        response['wait'] = true unless last
+      else
+        # support old-style protocol
+        response = {'message' => message}
       end
       Einhorn::Client::Transport.send_message(conn, response)
     end
 
-    def self.generate_response(conn, command)
-      begin
-        request = Einhorn::Client::Transport.deserialize_message(command)
-      rescue ArgumentError => e
-        return {
-          'message' => "Could not parse command: #{e}"
-        }
-      end
-
+    def self.generate_message(conn, request)
       unless command_name = request['command']
-        return {
-          'message' => 'No "command" parameter provided; not sure what you want me to do.'
-        }
+        return 'No "command" parameter provided; not sure what you want me to do.'
       end
 
       if command_spec = @@commands[command_name]
-        conn.log_debug("Received command: #{command.inspect}")
+        conn.log_debug("Received command: #{request.inspect}")
         begin
           return command_spec[:code].call(conn, request)
         rescue StandardError => e
@@ -242,7 +254,7 @@ module Einhorn::Command
           return msg
         end
       else
-        conn.log_debug("Received unrecognized command: #{command.inspect}")
+        conn.log_debug("Received unrecognized command: #{request.inspect}")
         return unrecognized_command(conn, request)
       end
     end
@@ -295,7 +307,7 @@ EOF
       YAML.dump(Einhorn::Command.dumpable_state)
     end
 
-    command 'reload', 'Reload Einhorn' do |conn, _|
+    command 'reload', 'Reload Einhorn' do |conn, request|
       # TODO: make reload actually work (command socket reopening is
       # an issue). Would also be nice if user got a confirmation that
       # the reload completed, though that's not strictly necessary.
@@ -303,7 +315,7 @@ EOF
       # In the normal case, this will do a write
       # synchronously. Otherwise, the bytes will be stuck into the
       # buffer and lost upon reload.
-      send_message(conn, 'Reloading, as commanded')
+      send_message(conn, 'Reloading, as commanded', request['id'], true)
       Einhorn::Command.reload
     end
 
@@ -323,10 +335,13 @@ EOF
       Einhorn::Command.louder
     end
 
-    command 'upgrade', 'Upgrade all Einhorn workers. This may result in Einhorn reloading its own code as well.' do |conn, _|
-      # TODO: send confirmation when this is done
-      send_message(conn, 'Upgrading, as commanded')
-      # This or may not return
+    command 'upgrade', 'Upgrade all Einhorn workers. This may result in Einhorn reloading its own code as well.' do |conn, request|
+      # send first message directly for old clients that don't support request
+      # ids or subscriptions. Everything else is sent tagged with request id
+      # for new clients.
+      send_message(conn, 'Upgrading, as commanded', request['id'])
+      conn.subscribe(:upgrade, request['id'])
+      # If the app is preloaded this doesn't return.
       Einhorn::Command.full_upgrade
       nil
     end
