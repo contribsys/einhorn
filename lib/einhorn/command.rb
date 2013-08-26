@@ -323,7 +323,7 @@ module Einhorn
 
       if Einhorn::State.upgrading && acked >= target
         Einhorn::State.upgrading = false
-        Einhorn.log_info("Upgrade to version #{Einhorn::State.version} complete.", :upgrade)
+        Einhorn.log_info("Upgraded successfully to version #{Einhorn::State.version} (Einhorn #{Einhorn::VERSION}).", :upgrade)
         Einhorn.send_tagged_message(:upgrade, "Upgrade done", true)
       end
 
