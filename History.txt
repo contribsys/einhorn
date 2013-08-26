@@ -1,0 +1,4 @@
+=== 0.5.0 2013-07-11
+
+* 1 major enhancement:
+  * Improve Einhorn protocol to allow multiplexing of commands on a single socket
