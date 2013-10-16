@@ -34,9 +34,21 @@ module Einhorn
       acked_modern_workers_with_state.map {|pid, _| pid}
     end
 
+    def self.unsignaled_modern_workers_with_state
+      modern_workers_with_state.select do |_, spec|
+        spec[:signaled].length == 0
+      end
+    end
+
     def self.acked_unsignaled_modern_workers
       acked_modern_workers_with_state.select do |_, spec|
         spec[:signaled].length == 0
+      end.map {|pid, _| pid}
+    end
+
+    def self.unsignaled_modern_workers_with_priority
+      unsignaled_modern_workers_with_state.sort_by do |pid, spec|
+        spec[:acked] ? 1 : 0
       end.map {|pid, _| pid}
     end
 
@@ -57,6 +69,10 @@ module Einhorn
 
     def self.ack_target
       Einhorn::State.config[:number]
+    end
+
+    def self.unsignaled_count
+      unsignaled_modern_workers_with_state.length
     end
 
     def self.old_workers
