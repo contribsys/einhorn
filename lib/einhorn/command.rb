@@ -319,7 +319,7 @@ module Einhorn
 
     def self.cull
       acked = Einhorn::WorkerPool.ack_count
-      unsignaled_count = Einhorn::WorkerPool.unsignaled_count
+      unsignaled = Einhorn::WorkerPool.unsignaled_count
       target = Einhorn::WorkerPool.ack_target
 
       if Einhorn::State.upgrading && acked >= target
@@ -335,7 +335,7 @@ module Einhorn
       end
 
       if unsignaled > target
-        excess = Einhorn::WorkerPool.unsignaled_modern_workers_with_priority[0...(unsignaled_count-target)]
+        excess = Einhorn::WorkerPool.unsignaled_modern_workers_with_priority[0...(unsignaled-target)]
         Einhorn.log_info("Have too many workers at the current version, so killing off #{excess.length} of them.")
         signal_all("USR2", excess)
       end
