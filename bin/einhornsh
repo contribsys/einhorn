@@ -11,6 +11,9 @@ require 'einhorn'
 module Einhorn
   class EinhornSH
 
+    class EinhornSHExit < StandardError
+    end
+
     def initialize(path_to_socket)
       @path_to_socket = path_to_socket
       @request_id = 0
@@ -42,15 +45,28 @@ module Einhorn
       emit
       emit('Type "quit" or "exit" to quit at any time')
 
-      while line = Readline.readline('> ', true)
-        command, args = parse_command(line)
-        if ['quit', 'exit'].include?(command)
-          emit("Goodbye!")
-          return
-        end
-        send_command({'id' => request_id, 'command' => command, 'args' => args}) do |message|
-          puts message
-        end
+      while multiline = Readline.readline('> ', true)
+        run_line(multiline)
+      end
+    end
+
+    def run_line(multiline)
+      lines = multiline.split(";")
+      lines.each do |line|
+        run_command(line)
+      end
+    end
+
+    def run_command(line)
+      command, args = parse_command(line)
+      if command.nil?
+        return
+      elsif ['quit', 'exit'].include?(command)
+        emit("Goodbye!")
+        raise EinhornSHExit
+      end
+      send_command({'id' => request_id, 'command' => command, 'args' => args}) do |message|
+        puts message
       end
     end
 
@@ -128,6 +144,11 @@ with a `-d`, provide the same argument here."
     opts.on('-d PATH', '--socket-path PATH', 'Path to the Einhorn command socket') do |path|
       options[:socket_path] = path
     end
+
+    opts.on('-e CMD', '--execute CMD', 'Execute this command outside of interactive mode') do |cmd|
+      options[:cmd] = cmd
+    end
+
   end
   optparse.parse!
 
@@ -148,8 +169,16 @@ with a `-d`, provide the same argument here."
     path_to_socket = Einhorn::Command::Interface.default_socket_path(cmd_name)
   end
 
-  sh = Einhorn::EinhornSH.new(path_to_socket)
-  sh.run
+  sh = Einhorn::EinhornSH.new(path_to_socket)  
+
+  cmd = options[:cmd]
+
+  begin
+    cmd ? sh.run_line(cmd) : sh.run
+  rescue Einhorn::EinhornSH::EinhornSHExit => e
+    return 0
+  end
+
   return 0
 end
 
