@@ -11,6 +11,9 @@ require 'einhorn'
 module Einhorn
   class EinhornSH
 
+    class EinhornSHExit < StandardError
+    end
+
     def initialize(path_to_socket)
       @path_to_socket = path_to_socket
       @request_id = 0
@@ -42,15 +45,28 @@ module Einhorn
       emit
       emit('Type "quit" or "exit" to quit at any time')
 
-      while line = Readline.readline('> ', true)
-        command, args = parse_command(line)
-        if ['quit', 'exit'].include?(command)
-          emit("Goodbye!")
-          return
-        end
-        send_command({'id' => request_id, 'command' => command, 'args' => args}) do |message|
-          puts message
-        end
+      while command_line_sequence = Readline.readline('> ', true)
+        run_command_line_sequence(command_line_sequence)
+      end
+    end
+
+    def run_command_line_sequence(command_line_sequence)
+      command_lines = command_line_sequence.split(";")
+      command_lines.each do |command_line|
+        run_command_line(command_line)
+      end
+    end
+
+    def run_command_line(command_line)
+      command, args = parse_command_line(command_line)
+      if command.nil?
+        return
+      elsif ['quit', 'exit'].include?(command)
+        emit("Goodbye!")
+        raise EinhornSHExit
+      end
+      send_command({'id' => request_id, 'command' => command, 'args' => args}) do |message|
+        puts message
       end
     end
 
@@ -58,8 +74,8 @@ module Einhorn
       @request_id += 1
     end
 
-    def parse_command(line)
-      command, *args = Shellwords.shellsplit(line)
+    def parse_command_line(command_line)
+      command, *args = Shellwords.shellsplit(command_line)
       [command, args]
     end
 
@@ -128,6 +144,11 @@ with a `-d`, provide the same argument here."
     opts.on('-d PATH', '--socket-path PATH', 'Path to the Einhorn command socket') do |path|
       options[:socket_path] = path
     end
+
+    opts.on('-e CMD_LINE_SEQ', '--execute CMD_LINE_SEQ', 'Execute this command outside of interactive mode') do |cmd_line_seq|
+      options[:cmd_line_seq] = cmd_line_seq
+    end
+
   end
   optparse.parse!
 
@@ -148,8 +169,16 @@ with a `-d`, provide the same argument here."
     path_to_socket = Einhorn::Command::Interface.default_socket_path(cmd_name)
   end
 
-  sh = Einhorn::EinhornSH.new(path_to_socket)
-  sh.run
+  sh = Einhorn::EinhornSH.new(path_to_socket)  
+
+  cmd_line_seq = options[:cmd_line_seq]
+
+  begin
+    cmd_line_seq ? sh.run_command_line_sequence(cmd_line_seq) : sh.run
+  rescue Einhorn::EinhornSH::EinhornSHExit => e
+    return 0
+  end
+
   return 0
 end
 
