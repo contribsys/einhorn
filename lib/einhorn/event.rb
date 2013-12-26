@@ -10,17 +10,14 @@ module Einhorn
     @@connections = {}
     @@timers = {}
 
-    def self.cloexec!(fd)
-      fd.fcntl(Fcntl::F_SETFD, fd.fcntl(Fcntl::F_GETFD) | Fcntl::FD_CLOEXEC)
-    end
-
     def self.init
-      readable, writeable = IO.pipe
+      readable, writeable = Einhorn::Compat.pipe
+
       @@loopbreak_reader = LoopBreaker.open(readable)
       @@loopbreak_writer = writeable
 
-      cloexec!(readable)
-      cloexec!(writeable)
+      Einhorn::Compat.cloexec!(readable, true)
+      Einhorn::Compat.cloexec!(writeable, true)
     end
 
     def self.close_all

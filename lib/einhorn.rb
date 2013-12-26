@@ -373,6 +373,7 @@ module Einhorn
 end
 
 require 'einhorn/command'
+require 'einhorn/compat'
 require 'einhorn/client'
 require 'einhorn/event'
 require 'einhorn/worker'

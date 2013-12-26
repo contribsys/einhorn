@@ -18,7 +18,7 @@ module Einhorn::Event
       begin
         while true
           return if @closed
-          sock = @server.accept_nonblock
+          sock = Einhorn::Compat.accept_nonblock(@server)
           Connection.open(sock)
         end
       rescue Errno::EAGAIN

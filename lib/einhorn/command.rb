@@ -181,7 +181,8 @@ module Einhorn
       $stdout.flush
 
       # Spawn a child to pass the state through the pipe
-      read, write = IO.pipe
+      read, write = Einhorn::Compat.pipe
+
       fork do
         Einhorn::TransientState.whatami = :state_passer
         Einhorn::State.generation += 1
@@ -190,7 +191,12 @@ module Einhorn
         }
         read.close
 
-        write.write(YAML.dump(dumpable_state))
+        begin
+          write.write(YAML.dump(dumpable_state))
+        rescue Errno::EPIPE => e
+          e.message << " (state worker could not write state, which likely means the parent process has died)"
+          raise e
+        end
         write.close
 
         exit(0)
@@ -202,7 +208,11 @@ module Einhorn
       ENV.update(Einhorn::TransientState.environ)
 
       begin
-        exec [Einhorn::TransientState.script_name, Einhorn::TransientState.script_name], *(['--with-state-fd', read.fileno.to_s, '--'] + Einhorn::State.cmd)
+        Einhorn::Compat.exec(
+          Einhorn::TransientState.script_name,
+          ['--with-state-fd', read.fileno.to_s, '--'] + Einhorn::State.cmd,
+          :close_others => false
+          )
       rescue SystemCallError => e
         Einhorn.log_error("Could not reload! Attempting to continue. Error was: #{e}")
         Einhorn::State.reloading_for_preload_upgrade = false
@@ -235,10 +245,12 @@ module Einhorn
           # have to track and manually close FDs for other cases, we
           # may as well just reuse close_all rather than also set
           # cloexec on everything.
+          #
+          # Note that Ruby 1.9's close_others option is useful here.
           Einhorn::Event.close_all_for_worker
 
           prepare_child_environment
-          exec [cmd[0], cmd[0]], *cmd[1..-1]
+          Einhorn::Compat.exec(cmd[0], cmd[1..-1], :close_others => true)
         end
       end
 

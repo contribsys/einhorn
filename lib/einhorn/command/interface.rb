@@ -49,7 +49,7 @@ module Einhorn::Command
         # Need to avoid time-of-check to time-of-use bugs in blowing
         # away and recreating the old socketfile.
         destroy_old_command_socket(path)
-        UNIXServer.new(path)
+        Einhorn::Compat.unixserver_new(path)
       end
     end
 
@@ -88,7 +88,7 @@ module Einhorn::Command
         raise Errno::EADDRINUSE.new("Non-socket file present at Einhorn command socket path #{path}. Either remove that file and restart Einhorn, or pass a `-d PATH_TO_SOCKET` to change the command socket location.")
       end
 
-      Einhorn.log_info("Blowing away old Einhorn command socket at #{path}. This likely indicates a previous Einhorn master which exited uncleanly.")
+      Einhorn.log_info("Blowing away old Einhorn command socket at #{path}. This likely indicates a previous Einhorn worker which exited uncleanly.")
       # Whee, blow it away.
       File.unlink(path)
     end
