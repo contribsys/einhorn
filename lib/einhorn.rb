@@ -148,6 +148,7 @@ module Einhorn
   def self.bind(addr, port, flags)
     log_info("Binding to #{addr}:#{port} with flags #{flags.inspect}")
     sd = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+    Einhorn::Compat.cloexec!(sd, false)
 
     if flags.include?('r') || flags.include?('so_reuseaddr')
       sd.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, 1)
