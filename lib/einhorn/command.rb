@@ -250,7 +250,7 @@ module Einhorn
           Einhorn::Event.close_all_for_worker
 
           prepare_child_environment
-          Einhorn::Compat.exec(cmd[0], cmd[1..-1], :close_others => true)
+          Einhorn::Compat.exec(cmd[0], cmd[1..-1], :close_others => false)
         end
       end
 
