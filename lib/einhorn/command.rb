@@ -232,6 +232,8 @@ module Einhorn
           Einhorn::Event.close_all_for_worker
           Einhorn.set_argv(cmd, true)
 
+          reseed_random
+
           prepare_child_environment
           einhorn_main
         end
@@ -292,6 +294,36 @@ module Einhorn
       # FD lists, but nobody uses that in practice, and it makes
       # finding individual FDs more difficult
       ENV['EINHORN_FDS'] = Einhorn::State.bind_fds.map(&:to_s).join(' ')
+    end
+
+    # Reseed common ruby random number generators.
+    #
+    # OpenSSL::Random uses the PID to reseed after fork, which means that if a
+    # long-lived master process over its lifetime spawns two workers with the
+    # same PID, those workers will start with the same OpenSSL seed.
+    #
+    # Ruby >= 1.9 has a guard against this in SecureRandom, but any direct
+    # users of OpenSSL::Random will still be affected.
+    #
+    # Ruby 1.8 didn't even reseed the default random number generator used by
+    # Kernel#rand in certain releases.
+    #
+    # https://bugs.ruby-lang.org/issues/4579
+    #
+    def self.reseed_random
+      # reseed Kernel#rand
+      srand
+
+      # reseed OpenSSL::Random if it's loaded
+      if defined?(OpenSSL::Random)
+        if defined?(Random)
+          seed = Random.new_seed
+        else
+          # Ruby 1.8
+          seed = rand
+        end
+        OpenSSL::Random.seed(seed.to_s)
+      end
     end
 
     def self.prepare_child_process
