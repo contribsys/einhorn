@@ -162,10 +162,10 @@ module Einhorn::Command
         Einhorn::Command.stop_respawning
         exit(1)
       end
-      trap_async("HUP") {Einhorn::Command.full_upgrade}
+      trap_async("HUP") {Einhorn::Command.full_upgrade_smooth}
       trap_async("ALRM") do
         Einhorn.log_error("Upgrading using SIGALRM is deprecated. Please switch to SIGHUP")
-        Einhorn::Command.full_upgrade
+        Einhorn::Command.full_upgrade_smooth
       end
       trap_async("CHLD") {}
       trap_async("USR2") do
@@ -335,14 +335,25 @@ EOF
       Einhorn::Command.louder
     end
 
-    command 'upgrade', 'Upgrade all Einhorn workers. This may result in Einhorn reloading its own code as well.' do |conn, request|
+    command 'upgrade', 'Upgrade all Einhorn workers smoothly. This may result in Einhorn reloading its own code as well.' do |conn, request|
       # send first message directly for old clients that don't support request
       # ids or subscriptions. Everything else is sent tagged with request id
       # for new clients.
-      send_message(conn, 'Upgrading, as commanded', request['id'])
+      send_message(conn, 'Upgrading smoothly, as commanded', request['id'])
       conn.subscribe(:upgrade, request['id'])
       # If the app is preloaded this doesn't return.
-      Einhorn::Command.full_upgrade
+      Einhorn::Command.full_upgrade_smooth
+      nil
+    end
+
+    command 'upgrade_fleet', 'Upgrade all Einhorn workers a fleet at a time. This may result in Einhorn reloading its own code as well.' do |conn, request|
+      # send first message directly for old clients that don't support request
+      # ids or subscriptions. Everything else is sent tagged with request id
+      # for new clients.
+      send_message(conn, 'Upgrading fleet, as commanded', request['id'])
+      conn.subscribe(:upgrade, request['id'])
+      # If the app is preloaded this doesn't return.
+      Einhorn::Command.full_upgrade_fleet
       nil
     end
 
