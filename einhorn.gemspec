@@ -20,6 +20,7 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency 'chalk-rake'
 
   gem.add_development_dependency('rake')
+  gem.add_development_dependency('pry')
   gem.add_development_dependency('minitest', '< 5.0')
   gem.add_development_dependency('mocha', '~> 0.13')
   gem.version       = Einhorn::VERSION
