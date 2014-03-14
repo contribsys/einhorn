@@ -446,9 +446,20 @@ module Einhorn
       missing.times {spinup}
     end
 
-    def self.replenish_gradually(max_unacked=1)
+    def self.replenish_gradually(max_unacked=nil)
       return if Einhorn::TransientState.has_outstanding_spinup_timer
       return unless Einhorn::WorkerPool.missing_worker_count > 0
+
+      # default to spinning up at most NCPU workers at once
+      unless max_unacked
+        begin
+          @processor_count ||= Einhorn::Compat.processor_count
+        rescue => err
+          Einhorn.log_error(err.inspect)
+          @processor_count = 1
+        end
+        max_unacked = @processor_count
+      end
 
       if max_unacked <= 0
         raise ArgumentError.new("max_unacked must be positive")

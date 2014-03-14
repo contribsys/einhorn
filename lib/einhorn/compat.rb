@@ -44,5 +44,41 @@ module Einhorn
       cloexec!(sock, false)
       sock
     end
+
+    def self.processor_count
+      # jruby
+      if defined? Java::Java
+        return Java::Java.lang.Runtime.getRuntime.availableProcessors
+      end
+
+      # linux / friends
+      begin
+        return File.read('/proc/cpuinfo').scan(/^processor\s*:/).count
+      rescue Errno::ENOENT
+      end
+
+      # OS X
+      if RUBY_PLATFORM =~ /darwin/
+        return Integer(`sysctl -n hw.logicalcpu`)
+      end
+
+      # windows / friends
+      begin
+        require 'win32ole'
+      rescue LoadError
+      else
+        wmi = WIN32OLE.connect("winmgmts://")
+        wmi.ExecQuery("select * from Win32_ComputerSystem").each do |system|
+          begin
+            processors = system.NumberOfLogicalProcessors
+          rescue
+            processors = 0
+          end
+          return [system.NumberOfProcessors, processors].max
+        end
+      end
+
+      raise "Failed to detect number of CPUs"
+    end
   end
 end
