@@ -292,7 +292,8 @@ EOF
     # Used by einhornsh
     command 'ehlo' do |conn, request|
       <<EOF
-Welcome #{request['user']}! You are speaking to Einhorn Master Process #{$$}#{Einhorn::State.cmd_name ? " (#{Einhorn::State.cmd_name})" : ''}
+Welcome, #{request['user']}! You are speaking to Einhorn Master Process #{$$}#{Einhorn::State.cmd_name ? " (#{Einhorn::State.cmd_name})" : ''}.
+This is Einhorn #{Einhorn::VERSION}.
 EOF
     end
 

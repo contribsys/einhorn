@@ -12,7 +12,7 @@ class InterfaceTest < EinhornTestCase
         # Remove trailing newline
         message = message[0...-1]
         parsed = YAML.load(URI.unescape(message))
-        parsed['message'] =~ /Welcome gdb/
+        parsed['message'] =~ /Welcome, gdb/
       end
       request = {
         'command' => 'ehlo',
