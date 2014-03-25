@@ -55,6 +55,7 @@ module Einhorn
         :script_name => nil,
         :respawn => true,
         :upgrading => false,
+        :smooth_upgrade => false,
         :reloading_for_preload_upgrade => false,
         :path => nil,
         :cmd_name => nil,

@@ -15,18 +15,36 @@
 require 'rubygems'
 require 'einhorn/worker'
 
+def log(msg)
+  puts "=== [#{$$}] #{msg}"
+end
+
 def einhorn_main
-  puts "Called with ENV['EINHORN_FD_0']: #{ENV['EINHORN_FD_0']}"
+  log "Called with ENV['EINHORN_FD_0']: #{ENV['EINHORN_FD_0']}"
 
   fd_num = Einhorn::Worker.socket!
   socket = Socket.for_fd(fd_num)
 
+  sleep_before_shutdown = 0
+  sleep_before_ack = 0
+
   # Came up successfully, so let's set up graceful handler and ACK the
   # master.
   Einhorn::Worker.graceful_shutdown do
-    puts "Goodbye from #{$$}"
+    if sleep_before_shutdown > 0
+      log "sleeping #{sleep_before_shutdown}s before shutdown"
+      sleep sleep_before_shutdown
+    end
+    log "Goodbye!"
     exit(0)
   end
+
+  if sleep_before_ack > 0
+    log "sleeping #{sleep_before_ack}s before ack"
+    sleep sleep_before_ack
+  end
+  log "worker ack"
+
   Einhorn::Worker.ack!
 
   # Real work happens here.

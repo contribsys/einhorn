@@ -52,6 +52,16 @@ module Einhorn
       end.map {|pid, _| pid}
     end
 
+    def self.unacked_unsignaled_modern_workers_with_state
+      modern_workers_with_state.select {|pid, spec|
+        !spec[:acked] && spec[:signaled].length == 0
+      }
+    end
+
+    def self.unacked_unsignaled_modern_workers
+      unacked_unsignaled_modern_workers_with_state.map {|pid, _| pid}
+    end
+
     # Use the number of modern workers, rather than unsignaled modern
     # workers. This means if e.g. we do bunch of decs and then incs,
     # any workers which haven't died yet will count towards our number

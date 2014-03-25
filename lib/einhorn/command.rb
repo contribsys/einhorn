@@ -330,12 +330,31 @@ module Einhorn
       Einhorn.renice_self
     end
 
-    def self.full_upgrade
+    # @param options [Hash]
+    #
+    # @option options [Boolean] :smooth (false) Whether to perform a smooth or
+    #   fleet upgrade. In a smooth upgrade, bring up new workers and cull old
+    #   workers one by one as soon as there is a replacement. In a fleet
+    #   upgrade, bring up all the new workers and don't cull any old workers
+    #   until they're all up.
+    #
+    def self.full_upgrade(options={})
+      options = {:smooth => false}.merge(options)
+
+      Einhorn::State.smooth_upgrade = options.fetch(:smooth)
+
       if Einhorn::State.path && !Einhorn::State.reloading_for_preload_upgrade
         reload_for_preload_upgrade
       else
         upgrade_workers
       end
+    end
+
+    def self.full_upgrade_smooth
+      full_upgrade(:smooth => true)
+    end
+    def self.full_upgrade_fleet
+      full_upgrade(:smooth => false)
     end
 
     def self.reload_for_preload_upgrade
@@ -348,7 +367,9 @@ module Einhorn
         Einhorn.log_info("Currently upgrading (#{Einhorn::WorkerPool.ack_count} / #{Einhorn::WorkerPool.ack_target} ACKs; bumping version and starting over)...", :upgrade)
       else
         Einhorn::State.upgrading = true
-        Einhorn.log_info("Starting upgrade from version #{Einhorn::State.version}...", :upgrade)
+        u_type = Einhorn::State.smooth_upgrade ? 'smooth' : 'fleet'
+        Einhorn.log_info("Starting #{u_type} upgrade from version" +
+                         " #{Einhorn::State.version}...", :upgrade)
       end
 
       # Reset this, since we've just upgraded to a new universe (I'm
@@ -358,7 +379,11 @@ module Einhorn
       Einhorn::State.last_upgraded = Time.now
 
       Einhorn::State.version += 1
-      replenish_immediately
+      if Einhorn::State.smooth_upgrade
+        replenish_gradually
+      else
+        replenish_immediately
+      end
     end
 
     def self.cull
@@ -373,9 +398,20 @@ module Einhorn
       end
 
       old_workers = Einhorn::WorkerPool.old_workers
+      Einhorn.log_debug("#{acked} acked, #{unsignaled} unsignaled, #{target} target, #{old_workers.length} old workers")
       if !Einhorn::State.upgrading && old_workers.length > 0
         Einhorn.log_info("Killing off #{old_workers.length} old workers.")
         signal_all("USR2", old_workers)
+      elsif Einhorn::State.upgrading && Einhorn::State.smooth_upgrade
+        # In a smooth upgrade, kill off old workers one by one when we have
+        # sufficiently many new workers.
+        excess = (old_workers.length + acked) - target
+        if excess > 0
+          Einhorn.log_info("Smooth upgrade: killing off #{excess} old workers.")
+          signal_all("USR2", old_workers.take(excess))
+        elsif excess < 0
+          Einhorn.log_error("Smooth upgrade: somehow excess is #{excess}!")
+        end
       end
 
       if unsignaled > target
@@ -410,9 +446,24 @@ module Einhorn
       missing.times {spinup}
     end
 
-    def self.replenish_gradually
+    def self.replenish_gradually(max_unacked=nil)
       return if Einhorn::TransientState.has_outstanding_spinup_timer
       return unless Einhorn::WorkerPool.missing_worker_count > 0
+
+      # default to spinning up at most NCPU workers at once
+      unless max_unacked
+        begin
+          @processor_count ||= Einhorn::Compat.processor_count
+        rescue => err
+          Einhorn.log_error(err.inspect)
+          @processor_count = 1
+        end
+        max_unacked = @processor_count
+      end
+
+      if max_unacked <= 0
+        raise ArgumentError.new("max_unacked must be positive")
+      end
 
       # Exponentially backoff automated spinup if we're just having
       # things die before ACKing
@@ -420,15 +471,20 @@ module Einhorn
       seconds_ago = (Time.now - Einhorn::State.last_spinup).to_f
 
       if seconds_ago > spinup_interval
-        msg = "Last spinup was #{seconds_ago}s ago, and spinup_interval is #{spinup_interval}s, so spinning up a new process"
-
-        if Einhorn::State.consecutive_deaths_before_ack > 0
-          Einhorn.log_info("#{msg} (there have been #{Einhorn::State.consecutive_deaths_before_ack} consecutive unacked worker deaths)")
+        unacked = Einhorn::WorkerPool.unacked_unsignaled_modern_workers.length
+        if unacked >= max_unacked
+          Einhorn.log_debug("There are #{unacked} unacked new workers, and max_unacked is #{max_unacked}, so not spinning up a new process")
         else
-          Einhorn.log_debug(msg)
-        end
+          msg = "Last spinup was #{seconds_ago}s ago, and spinup_interval is #{spinup_interval}s, so spinning up a new process"
 
-        spinup
+          if Einhorn::State.consecutive_deaths_before_ack > 0
+            Einhorn.log_info("#{msg} (there have been #{Einhorn::State.consecutive_deaths_before_ack} consecutive unacked worker deaths)")
+          else
+            Einhorn.log_debug(msg)
+          end
+
+          spinup
+        end
       else
         Einhorn.log_debug("Last spinup was #{seconds_ago}s ago, and spinup_interval is #{spinup_interval}s, so not spinning up a new process")
       end
