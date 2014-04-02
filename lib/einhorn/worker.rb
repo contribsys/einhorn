@@ -33,6 +33,23 @@ module Einhorn
       end
     end
 
+    # Returns the index of this Einhorn child process.
+    #
+    # If an Einhorn master has N children, this will be an integer in
+    # the range [0,N), and no two workers running concurrently will
+    # ever have the same index.
+    #
+    # Returns nil if not running in Einhorn, or running on a version
+    # of Einhorn that does not support indexing children.
+    def self.einhorn_child_index
+      index = ENV['EINHORN_CHILD_INDEX']
+      if index.nil? || index !~ /\A \d+ \z/x
+        index
+      else
+        index.to_i
+      end
+    end
+
     # Call this once your app is up and running in a good state.
     # Arguments:
     #

@@ -220,8 +220,16 @@ module Einhorn
       end
     end
 
+    def self.next_index
+      all_indexes = Set.new(Einhorn::State.children.map { |k, st| st[:index] })
+      0.upto(all_indexes.length) do |i|
+        return i unless all_indexes.include?(i)
+      end
+    end
+
     def self.spinup(cmd=nil)
       cmd ||= Einhorn::State.cmd
+      index = next_index
       if Einhorn::TransientState.preloaded
         pid = fork do
           Einhorn::TransientState.whatami = :worker
@@ -234,7 +242,7 @@ module Einhorn
 
           reseed_random
 
-          prepare_child_environment
+          prepare_child_environment(index)
           einhorn_main
         end
       else
@@ -251,17 +259,18 @@ module Einhorn
           # Note that Ruby 1.9's close_others option is useful here.
           Einhorn::Event.close_all_for_worker
 
-          prepare_child_environment
+          prepare_child_environment(index)
           Einhorn::Compat.exec(cmd[0], cmd[1..-1], :close_others => false)
         end
       end
 
-      Einhorn.log_info("===> Launched #{pid}", :upgrade)
+      Einhorn.log_info("===> Launched #{pid} (index: #{index})", :upgrade)
       Einhorn::State.children[pid] = {
         :type => :worker,
         :version => Einhorn::State.version,
         :acked => false,
-        :signaled => Set.new
+        :signaled => Set.new,
+        :index => index
       }
       Einhorn::State.last_spinup = Time.now
 
@@ -276,7 +285,7 @@ module Einhorn
       end
     end
 
-    def self.prepare_child_environment
+    def self.prepare_child_environment(index)
       # This is run from the child
       ENV['EINHORN_MASTER_PID'] = Process.ppid.to_s
       ENV['EINHORN_SOCK_PATH'] = Einhorn::Command::Interface.socket_path
@@ -288,6 +297,8 @@ module Einhorn
 
       ENV['EINHORN_FD_COUNT'] = Einhorn::State.bind_fds.length.to_s
       Einhorn::State.bind_fds.each_with_index {|fd, i| ENV["EINHORN_FD_#{i}"] = fd.to_s}
+
+      ENV['EINHORN_CHILD_INDEX'] = index.to_s
 
       # EINHORN_FDS is deprecated. It was originally an attempt to
       # match Upstart's nominal internal support for space-separated
