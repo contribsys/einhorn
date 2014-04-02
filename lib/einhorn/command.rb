@@ -152,6 +152,24 @@ module Einhorn
       output
     end
 
+    def self.set_workers(new)
+      if new == Einhorn::State.config[:number]
+        return ""
+      end
+
+      Einhorn::Event.break_loop
+      old = Einhorn::State.config[:number]
+      Einhorn::State.config[:number] = new
+      output = "Altering worker count, #{old} -> #{new}. Will "
+      if old < new
+        output << "spin up additional workers."
+      else
+        output << "gracefully terminate workers."
+      end
+      $stderr.puts(output)
+      output
+    end
+
     def self.dumpable_state
       global_state = Einhorn::State.state
       descriptor_state = Einhorn::Event.persistent_descriptors.map do |descriptor|
