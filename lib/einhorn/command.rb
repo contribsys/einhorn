@@ -39,11 +39,11 @@ module Einhorn
 
       case type = spec[:type]
       when :worker
-        Einhorn.log_info("===> Exited worker #{pid.inspect}#{extra}")
+        Einhorn.log_info("===> Exited worker #{pid.inspect}#{extra}", :upgrade)
       when :state_passer
-        Einhorn.log_debug("===> Exited state passing process #{pid.inspect}")
+        Einhorn.log_debug("===> Exited state passing process #{pid.inspect}", :upgrade)
       else
-        Einhorn.log_error("===> Exited process #{pid.inspect} has unrecgonized type #{type.inspect}: #{spec.inspect}")
+        Einhorn.log_error("===> Exited process #{pid.inspect} has unrecgonized type #{type.inspect}: #{spec.inspect}", :upgrade)
       end
     end
 
@@ -102,17 +102,17 @@ module Einhorn
       children ||= Einhorn::WorkerPool.workers
 
       signaled = []
-      Einhorn.log_info("Sending #{signal} to #{children.inspect}")
+      Einhorn.log_info("Sending #{signal} to #{children.inspect}", :upgrade)
 
       children.each do |child|
         unless spec = Einhorn::State.children[child]
-          Einhorn.log_error("Trying to send #{signal} to dead child #{child.inspect}. The fact we tried this probably indicates a bug in Einhorn.")
+          Einhorn.log_error("Trying to send #{signal} to dead child #{child.inspect}. The fact we tried this probably indicates a bug in Einhorn.", :upgrade)
           next
         end
 
         if record
           if spec[:signaled].include?(signal)
-            Einhorn.log_error("Re-sending #{signal} to already-signaled child #{child.inspect}. It may be slow to spin down, or it may be swallowing #{signal}s.")
+            Einhorn.log_error("Re-sending #{signal} to already-signaled child #{child.inspect}. It may be slow to spin down, or it may be swallowing #{signal}s.", :upgrade)
           end
           spec[:signaled].add(signal)
         end
@@ -256,7 +256,7 @@ module Einhorn
         end
       end
 
-      Einhorn.log_info("===> Launched #{pid}")
+      Einhorn.log_info("===> Launched #{pid}", :upgrade)
       Einhorn::State.children[pid] = {
         :type => :worker,
         :version => Einhorn::State.version,
@@ -400,17 +400,17 @@ module Einhorn
       old_workers = Einhorn::WorkerPool.old_workers
       Einhorn.log_debug("#{acked} acked, #{unsignaled} unsignaled, #{target} target, #{old_workers.length} old workers")
       if !Einhorn::State.upgrading && old_workers.length > 0
-        Einhorn.log_info("Killing off #{old_workers.length} old workers.")
+        Einhorn.log_info("Killing off #{old_workers.length} old workers.", :upgrade)
         signal_all("USR2", old_workers)
       elsif Einhorn::State.upgrading && Einhorn::State.smooth_upgrade
         # In a smooth upgrade, kill off old workers one by one when we have
         # sufficiently many new workers.
         excess = (old_workers.length + acked) - target
         if excess > 0
-          Einhorn.log_info("Smooth upgrade: killing off #{excess} old workers.")
+          Einhorn.log_info("Smooth upgrade: killing off #{excess} old workers.", :upgrade)
           signal_all("USR2", old_workers.take(excess))
         elsif excess < 0
-          Einhorn.log_error("Smooth upgrade: somehow excess is #{excess}!")
+          Einhorn.log_error("Smooth upgrade: somehow excess is #{excess}!", :upgrade)
         end
       end
 
@@ -478,7 +478,7 @@ module Einhorn
           msg = "Last spinup was #{seconds_ago}s ago, and spinup_interval is #{spinup_interval}s, so spinning up a new process"
 
           if Einhorn::State.consecutive_deaths_before_ack > 0
-            Einhorn.log_info("#{msg} (there have been #{Einhorn::State.consecutive_deaths_before_ack} consecutive unacked worker deaths)")
+            Einhorn.log_info("#{msg} (there have been #{Einhorn::State.consecutive_deaths_before_ack} consecutive unacked worker deaths)", :upgrade)
           else
             Einhorn.log_debug(msg)
           end
