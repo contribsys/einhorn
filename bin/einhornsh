@@ -170,7 +170,7 @@ with a `-d`, provide the same argument here."
     path_to_socket = Einhorn::Command::Interface.default_socket_path(cmd_name)
   end
 
-  sh = Einhorn::EinhornSH.new(path_to_socket)  
+  sh = Einhorn::EinhornSH.new(path_to_socket)
 
   cmd_line_seq = options[:cmd_line_seq]
 
