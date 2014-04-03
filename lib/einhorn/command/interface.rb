@@ -328,7 +328,7 @@ EOF
       Einhorn::Command.decrement
     end
 
-    command 'set-workers', 'Set the number of Einhorn child processes' do |conn, request|
+    command 'set_workers', 'Set the number of Einhorn child processes' do |conn, request|
       args = request['args']
       if message = validate_args(args)
         next message
