@@ -66,7 +66,8 @@ module Einhorn
         raise EinhornSHExit
       end
       send_command({'id' => request_id, 'command' => command, 'args' => args}) do |message|
-        puts message
+        $stdout.puts message
+        $stdout.flush
       end
     end
 
@@ -169,7 +170,7 @@ with a `-d`, provide the same argument here."
     path_to_socket = Einhorn::Command::Interface.default_socket_path(cmd_name)
   end
 
-  sh = Einhorn::EinhornSH.new(path_to_socket)  
+  sh = Einhorn::EinhornSH.new(path_to_socket)
 
   cmd_line_seq = options[:cmd_line_seq]
 
