@@ -168,8 +168,9 @@ module Einhorn
   end
 
   # Implement these ourselves so it plays nicely with state persistence
-  def self.log_debug(msg)
+  def self.log_debug(msg, tag=nil)
     $stderr.puts("#{log_tag} DEBUG: #{msg}") if Einhorn::State.verbosity <= 0
+    self.send_tagged_message(tag, msg) if tag
   end
   def self.log_info(msg, tag=nil)
     $stderr.puts("#{log_tag} INFO: #{msg}") if Einhorn::State.verbosity <= 1
