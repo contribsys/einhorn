@@ -328,6 +328,21 @@ EOF
       Einhorn::Command.decrement
     end
 
+    command 'set_workers', 'Set the number of Einhorn child processes' do |conn, request|
+      args = request['args']
+      if message = validate_args(args)
+        next message
+      end
+
+      count = args[0].to_i
+      if count < 1 || count > 100
+        # sancheck. 100 is kinda arbitrary.
+        next "Invalid count: '#{args[0]}'. Must be an integer in [1,100)."
+      end
+
+      Einhorn::Command.set_workers(count)
+    end
+
     command 'quieter', 'Decrease verbosity' do
       Einhorn::Command.quieter
     end
