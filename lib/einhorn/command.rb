@@ -438,8 +438,8 @@ module Einhorn
         if excess > 0
           Einhorn.log_info("Smooth upgrade: killing off #{excess} old workers.", :upgrade)
           signal_all("USR2", old_workers.take(excess))
-        elsif excess < 0
-          Einhorn.log_error("Smooth upgrade: somehow excess is #{excess}!", :upgrade)
+        else
+          Einhorn.log_debug("Not killing old workers, as excess is #{excess}.")
         end
       end
 
