@@ -267,7 +267,7 @@ if true # $0 == __FILE__
       Einhorn::Command.quieter(false)
     end
 
-    opts.on('-s', '--seconds N', 'Number of seconds to wait until respawning') do |b|
+    opts.on('-s', '--seconds N', 'Number of seconds to wait until respawning') do |s|
       Einhorn::State.config[:seconds] = s.to_i
     end
 
