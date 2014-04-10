@@ -239,6 +239,9 @@ module Einhorn
       rescue Exception => e
         log_info("Proceeding with postload -- could not load #{path}: #{e} (#{e.class})\n  #{e.backtrace.join("\n  ")}", :upgrade)
       else
+        if defined?(num_processes)
+          Einhorn::State.config[:number] = num_processes
+        end
         if defined?(einhorn_main)
           log_info("Successfully loaded #{path}", :upgrade)
           Einhorn::TransientState.preloaded = true
