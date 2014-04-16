@@ -361,7 +361,17 @@ module Einhorn
       Einhorn::State.reloading_for_preload_upgrade = false
     end
 
+    forked = false
+
     while Einhorn::State.respawn || Einhorn::State.children.size > 0
+      if !forked && (Einhorn::WorkerPool.ack_count == Einhorn::WorkerPool.ack_target)
+        if fork
+          exit!
+        else
+          forked = true
+        end
+      end
+
       log_debug("Entering event loop")
       Einhorn.plugins_send(:event_loop)
 
