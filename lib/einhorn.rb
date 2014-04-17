@@ -365,8 +365,9 @@ module Einhorn
 
     while Einhorn::State.respawn || Einhorn::State.children.size > 0
       if !forked && (Einhorn::WorkerPool.ack_count == Einhorn::WorkerPool.ack_target)
-        if fork
-          exit!
+        if pid = fork
+          Process.detach(pid)
+          exit!(0)
         else
           forked = true
         end
