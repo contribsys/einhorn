@@ -333,6 +333,17 @@ module Einhorn
   end
 
   def self.run
+    reader, writer = IO.pipe
+    if pid = fork
+      writer.close
+      reader.gets
+      log_info("Detaching, since all workers are up.")
+      Process.detach(pid)
+      exit!(0)
+    else
+      reader.close
+    end
+
     Einhorn::Command::Interface.init
     Einhorn::Event.init
 
@@ -361,16 +372,13 @@ module Einhorn
       Einhorn::State.reloading_for_preload_upgrade = false
     end
 
-    forked = false
+    detached = false
 
     while Einhorn::State.respawn || Einhorn::State.children.size > 0
-      if !forked && (Einhorn::WorkerPool.ack_count == Einhorn::WorkerPool.ack_target)
-        if pid = fork
-          Process.detach(pid)
-          exit!(0)
-        else
-          forked = true
-        end
+      if !detached && (Einhorn::WorkerPool.ack_count == Einhorn::WorkerPool.ack_target)
+        detached = true
+        writer.puts('a')
+        writer.close
       end
 
       log_debug("Entering event loop")
