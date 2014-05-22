@@ -329,7 +329,20 @@ module Einhorn
     end
   end
 
+  # Perform startup checks to ensure our environment is sane
+  def self.sanity_check
+    log_info("Running under Ruby #{RUBY_VERSION}")
+    log_info("Rbenv ruby version: #{ENV['RBENV_VERSION']}") if ENV['RBENV_VERSION']
+    begin
+      bundler_gem = Gem::Specification.find_by_name('bundler')
+      log_info("Using Bundler #{bundler_gem.version.to_s}")
+    rescue Gem::LoadError
+    end
+  end
+
   def self.run
+    sanity_check
+
     Einhorn::Command::Interface.init
     Einhorn::Event.init
 

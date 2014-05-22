@@ -10,4 +10,10 @@ class StartupTest < EinhornIntegrationTestCase
       end
     end
   end
+
+  describe 'when invoked with --upgrade-check' do
+    it 'successfully exits' do
+      with_running_einhorn(%w[--upgrade-check])
+    end
+  end
 end

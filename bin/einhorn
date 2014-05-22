@@ -296,6 +296,11 @@ if true # $0 == __FILE__
       Einhorn.restore_state(state)
     end
 
+    opts.on('--upgrade-check', '[Internal option] Check if Einhorn can exec itself and exit with status 0 before loading code') do
+      Einhorn.sanity_check
+      exit 0
+    end
+
     opts.on('--version', 'Show version') do
       puts Einhorn::VERSION
       exit
