@@ -5,6 +5,7 @@ require 'set'
 require 'socket'
 require 'tmpdir'
 require 'yaml'
+require 'shellwords'
 
 require 'einhorn/third/little-plugger'
 
@@ -327,6 +328,20 @@ module Einhorn
         arg
       end
     end
+  end
+
+  # Construct and a command and args that can be used to re-exec
+  # Einhorn for upgrades.
+  def self.upgrade_commandline(prefix=[])
+    cmdline = []
+    if Einhorn::TransientState.re_exec_commandline
+      cmdline += Einhorn::TransientState.re_exec_commandline
+    else
+      cmdline << Einhorn::TransientState.script_name
+    end
+    cmdline += prefix
+    cmdline += Einhorn::State.cmd
+    [cmdline[0], cmdline[1..-1]]
   end
 
   # Perform startup checks to ensure our environment is sane

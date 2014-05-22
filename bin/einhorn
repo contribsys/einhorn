@@ -275,6 +275,10 @@ if true # $0 == __FILE__
       Einhorn::Command.louder(false)
     end
 
+    opts.on('--reexec-as=CMDLINE', 'Substitute CMDLINE for \"einhorn\" when upgrading') do |cmdline|
+      Einhorn::TransientState.re_exec_commandline = Shellwords.shellsplit(cmdline)
+    end
+
     Einhorn.plugins_send(:optparse, opts)
 
     opts.on('--nice MASTER[:WORKER=0][:RENICE_CMD=/usr/bin/renice]', 'Unix nice level at which to run the einhorn processes. If not running as root, make sure to ulimit -e as appopriate.') do |nice|

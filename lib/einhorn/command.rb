@@ -226,11 +226,10 @@ module Einhorn
       ENV.update(Einhorn::TransientState.environ)
 
       begin
-        Einhorn::Compat.exec(
-          Einhorn::TransientState.script_name,
-          ['--with-state-fd', read.fileno.to_s, '--'] + Einhorn::State.cmd,
-          :close_others => false
-          )
+        upgrade_cmd, upgrade_args =
+                     Einhorn::Compat.exec(
+                       *Einhorn.upgrade_commandline(['--with-state-fd', read.fileno.to_s, '--']),
+                       :close_others => false)
       rescue SystemCallError => e
         Einhorn.log_error("Could not reload! Attempting to continue. Error was: #{e}")
         Einhorn::State.reloading_for_preload_upgrade = false
@@ -278,7 +277,7 @@ module Einhorn
           Einhorn::Event.close_all_for_worker
 
           prepare_child_environment(index)
-          Einhorn::Compat.exec(cmd[0], cmd[1..-1], :close_others => false)
+          Einhorn::Compat.exec(*Einhorn.upgrade_commandline, :close_others => false)
         end
       end
 
