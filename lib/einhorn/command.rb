@@ -225,6 +225,18 @@ module Einhorn
       ENV.clear
       ENV.update(Einhorn::TransientState.environ)
 
+      upgrade_sentinel = fork do
+        Einhorn::TransientState.whatami = :upgrade_sentinel
+        Einhorn::Compat.exec(*Einhorn.upgrade_commandline(['--upgrade-check']))
+      end
+      Process.wait(upgrade_sentinel)
+      unless $?.zero?
+        Einhorn.log_error("Could not reload! Attempting to continue. Error was: #{e}")
+        Einhorn::State.reloading_for_preload_upgrade = false
+        read.close
+        return
+      end
+
       begin
         upgrade_cmd, upgrade_args =
                      Einhorn::Compat.exec(
