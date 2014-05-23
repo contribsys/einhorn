@@ -33,10 +33,7 @@ class UpgradeTests < EinhornIntegrationTestCase
 
     it 'can restart' do
       File.write(File.join(@dir, "version"), "0")
-      reexec_cmdline = 'bundle exec einhorn'
-      with_running_einhorn(%W{einhorn -m manual -b 127.0.0.1:#{@port} --reexec-as=#{reexec_cmdline} -d #{@socket_path} -- ruby #{@server_program}},
-                           :stdout => 1,
-                           :stderr => 2) do |process|
+      with_running_einhorn(%W{einhorn -m manual -b 127.0.0.1:#{@port} -d #{@socket_path} -- ruby #{@server_program}}) do |process|
         wait_for_command_socket(@socket_path)
         assert_equal("0", read_version, "Should report the initial version")
 
@@ -44,7 +41,6 @@ class UpgradeTests < EinhornIntegrationTestCase
         einhornsh(%W{-d #{@socket_path} -e upgrade})
         assert_equal("1", read_version, "Should report the upgraded version")
 
-        $stderr.puts "Waiting for #{process} to terminate from a SIGTERM..."
         process.send_signal("TERM")
       end
     end

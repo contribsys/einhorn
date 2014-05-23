@@ -17,6 +17,8 @@ module Helpers
       expected_exit_code = options.delete(:expected_exit_code) { nil }
       cwd = options.delete(:cwd) { einhorn_code_dir }
 
+      stdout, stderr = "", ""
+      communicator = nil
       process = Bundler.with_clean_env do
         Dir.chdir(cwd) do
           default_options = {
@@ -28,6 +30,7 @@ module Helpers
         end
       end
       begin
+        communicator = Thread.new { stdout, stderr = process.communicate }
         yield(process) if block_given?
       ensure
         status = -1
@@ -41,11 +44,18 @@ module Helpers
           status = process.wait
         end
         assert_equal(expected_exit_code, status.exitstatus) unless expected_exit_code == nil
+        communicator.join
+        return stdout, stderr
       end
     end
 
-    def einhornsh(commandline, options = {:stdin => '/dev/null'}) #{:stdout => '/dev/null'})
-      Subprocess.check_call(%W{bundle exec #{File.expand_path('bin/einhornsh')}} + commandline, options)
+    def einhornsh(commandline, options = {})
+      Subprocess.check_call(%W{bundle exec #{File.expand_path('bin/einhornsh')}} + commandline,
+                            {
+                              :stdin => '/dev/null',
+                              :stdout => '/dev/null',
+                              :stderr => '/dev/null'
+                            }.merge(options))
     end
 
     def fixture_path(name)
