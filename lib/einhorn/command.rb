@@ -289,7 +289,7 @@ module Einhorn
           Einhorn::Event.close_all_for_worker
 
           prepare_child_environment(index)
-          Einhorn::Compat.exec(*Einhorn.upgrade_commandline, :close_others => false)
+          Einhorn::Compat.exec(cmd[0], cmd[1..-1], :close_others => false)
         end
       end
 
