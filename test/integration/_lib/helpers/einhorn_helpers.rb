@@ -33,5 +33,25 @@ module Helpers
         assert_equal(expected_exit_code, status.exitstatus) unless expected_exit_code == nil
       end
     end
+    def fixture_path(name)
+      File.expand_path(File.join('../fixtures', name), File.dirname(__FILE__))
+    end
+
+    # Creates a new temporary directory with the initial contents from
+    # test/integration/_lib/fixtures/{name} and returns the path to
+    # it.  The contents of this directory are temporary and can be
+    # safely overwritten.
+    def prepare_fixture_directory(name)
+      @fixtured_dirs ||= Set.new
+      new_dir = Dir.mktmpdir(name)
+      @fixtured_dirs << new_dir
+      FileUtils.cp_r(File.join(fixture_path(name), '.'), new_dir)
+
+      new_dir
+    end
+
+    def cleanup_fixtured_directories
+      (@fixtured_dirs || []).each { |dir| FileUtils.rm_rf(dir) }
+    end
   end
 end
