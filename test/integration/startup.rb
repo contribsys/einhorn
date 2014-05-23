@@ -5,7 +5,8 @@ class StartupTest < EinhornIntegrationTestCase
 
   describe 'when invoked without args' do
     it 'prints usage and exits with 1' do
-      with_running_einhorn([], :expected_exit_code => 1) do |stdout, stderr|
+      with_running_einhorn([], :expected_exit_code => 1) do |process|
+        stdout, stderr = process.communicate
         assert_match(/\A## Usage/, stdout)
       end
     end

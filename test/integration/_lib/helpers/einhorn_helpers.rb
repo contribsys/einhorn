@@ -20,16 +20,25 @@ module Helpers
         Dir.chdir(cwd) do
           default_options = {
             :stdout => Subprocess::PIPE,
-            :stderr => Subprocess::PIPE
+            :stderr => Subprocess::PIPE,
+            :stdin => '/dev/null',
           }
           Subprocess::Process.new(Array(einhorn_command) + cmdline, default_options.merge(options))
         end
       end
       begin
-        output = process.communicate
-        yield(*output) if block_given?
+        yield(process) if block_given?
       ensure
-        status = process.wait
+        status = -1
+        begin
+          Timeout.timeout(10) do  # (Argh, I'm so sorry)
+            status = process.wait
+          end
+        rescue Timeout::Error
+          $stderr.puts "Could not get Einhorn to quit within 10 seconds, killing it forcefully..."
+          process.send_signal("KILL")
+          status = process.wait
+        end
         assert_equal(expected_exit_code, status.exitstatus) unless expected_exit_code == nil
       end
     end
