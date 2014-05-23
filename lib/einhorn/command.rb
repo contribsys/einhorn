@@ -230,8 +230,8 @@ module Einhorn
         Einhorn::Compat.exec(*Einhorn.upgrade_commandline(['--upgrade-check']))
       end
       Process.wait(upgrade_sentinel)
-      unless $?.zero?
-        Einhorn.log_error("Could not reload! Attempting to continue. Error was: #{e}")
+      unless $?.exitstatus.zero?
+        Einhorn.log_error("Can not initiate reload since sentinel process exited with #{$?.exitstatus}")
         Einhorn::State.reloading_for_preload_upgrade = false
         read.close
         return
