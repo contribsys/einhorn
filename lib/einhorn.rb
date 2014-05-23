@@ -86,6 +86,7 @@ module Einhorn
         :argv => [],
         :environ => {},
         :has_outstanding_spinup_timer => false,
+        :re_exec_commandline => nil,
         :stateful => nil,
         # Holds references so that the GC doesn't go and close your sockets.
         :socket_handles => Set.new
