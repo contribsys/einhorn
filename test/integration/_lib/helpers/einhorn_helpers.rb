@@ -14,7 +14,7 @@ module Helpers
     def with_running_einhorn(cmdline, options = {})
       options = options.dup
       einhorn_command = options.delete(:einhorn_command) { default_einhorn_command }
-      expected_exit_code = options.delete(:expected_exit_code) { 0 }
+      expected_exit_code = options.delete(:expected_exit_code) { nil }
       cwd = options.delete(:cwd) { einhorn_code_dir }
 
       process = Bundler.with_clean_env do
