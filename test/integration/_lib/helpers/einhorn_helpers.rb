@@ -1,4 +1,5 @@
 require 'subprocess'
+require 'timeout'
 
 module Helpers
   module EinhornHelpers
@@ -42,6 +43,11 @@ module Helpers
         assert_equal(expected_exit_code, status.exitstatus) unless expected_exit_code == nil
       end
     end
+
+    def einhornsh(commandline, options = {:stdin => '/dev/null'}) #{:stdout => '/dev/null'})
+      Subprocess.check_call(%W{bundle exec #{File.expand_path('bin/einhornsh')}} + commandline, options)
+    end
+
     def fixture_path(name)
       File.expand_path(File.join('../fixtures', name), File.dirname(__FILE__))
     end
@@ -61,6 +67,19 @@ module Helpers
 
     def cleanup_fixtured_directories
       (@fixtured_dirs || []).each { |dir| FileUtils.rm_rf(dir) }
+    end
+
+    def find_free_port(host='127.0.0.1')
+      open_port = TCPServer.new(host, 0)
+      open_port.addr[1]
+    ensure
+      open_port.close
+    end
+
+    def wait_for_command_socket(path)
+      until File.exist?(path)
+        sleep 0.01
+      end
     end
   end
 end
