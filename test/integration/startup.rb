@@ -5,16 +5,27 @@ class StartupTest < EinhornIntegrationTestCase
 
   describe 'when invoked without args' do
     it 'prints usage and exits with 1' do
-      with_running_einhorn([], :expected_exit_code => 1) do |process|
-        stdout, stderr = process.communicate
-        assert_match(/\A## Usage/, stdout)
+      assert_raises(Subprocess::NonZeroExit) do
+        Subprocess.check_call(default_einhorn_command,
+                              :stdout => Subprocess::PIPE,
+                              :stderr => Subprocess::PIPE) do |einhorn|
+          stdout, stderr = einhorn.communicate
+          assert_match(/\A## Usage/, stdout)
+          assert_equal(1, einhorn.wait.exitstatus)
+        end
       end
     end
   end
 
   describe 'when invoked with --upgrade-check' do
     it 'successfully exits' do
-      with_running_einhorn(%w[--upgrade-check], :expected_exit_code => 0)
+      Subprocess.check_call(default_einhorn_command + %w[--upgrade-check],
+                            :stdout => Subprocess::PIPE,
+                            :stderr => Subprocess::PIPE) do |einhorn|
+        stdout, stderr = einhorn.communicate
+        status = einhorn.wait
+        assert_equal(0, status.exitstatus)
+      end
     end
   end
 end
