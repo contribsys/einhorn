@@ -11,13 +11,6 @@ task :readme do
   File.open('README.md', 'w') {|f| f.write(readme)}
 end
 
-Rake::TestTask.new do |t|
-  t.libs = ["lib"]
-  # t.warning = true
-  t.verbose = true
-  t.test_files = FileList['test/unit/**/*.rb']
-end
-
 task :default => :test do
 end
 require 'bundler/setup'
