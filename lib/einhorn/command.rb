@@ -238,9 +238,11 @@ module Einhorn
       end
 
       begin
+        respawn_commandline = Einhorn.upgrade_commandline(['--with-state-fd', read.fileno.to_s, '--'])
+        Einhorn.log_info("About to re-exec as #{respawn_commandline.inspect}")
         upgrade_cmd, upgrade_args =
                      Einhorn::Compat.exec(
-                       *Einhorn.upgrade_commandline(['--with-state-fd', read.fileno.to_s, '--']),
+                       *respawn_commandline,
                        :close_others => false)
       rescue SystemCallError => e
         Einhorn.log_error("Could not reload! Attempting to continue. Error was: #{e}")
@@ -382,12 +384,7 @@ module Einhorn
       options = {:smooth => false}.merge(options)
 
       Einhorn::State.smooth_upgrade = options.fetch(:smooth)
-
-      if Einhorn::State.path && !Einhorn::State.reloading_for_preload_upgrade
-        reload_for_preload_upgrade
-      else
-        upgrade_workers
-      end
+      reload_for_preload_upgrade
     end
 
     def self.full_upgrade_smooth
