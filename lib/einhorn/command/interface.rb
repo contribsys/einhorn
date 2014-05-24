@@ -351,7 +351,7 @@ EOF
       Einhorn::Command.louder
     end
 
-    command 'upgrade', 'Upgrade all Einhorn workers smoothly. This may result in Einhorn reloading its own code as well.' do |conn, request|
+    command 'upgrade', 'Upgrade all Einhorn workers smoothly. This causes Einhorn to reload its own code as well.' do |conn, request|
       # send first message directly for old clients that don't support request
       # ids or subscriptions. Everything else is sent tagged with request id
       # for new clients.
@@ -362,7 +362,7 @@ EOF
       nil
     end
 
-    command 'upgrade_fleet', 'Upgrade all Einhorn workers a fleet at a time. This may result in Einhorn reloading its own code as well.' do |conn, request|
+    command 'upgrade_fleet', 'Upgrade all Einhorn workers a fleet at a time. This causes Einhorn to reload its own code as well.' do |conn, request|
       # send first message directly for old clients that don't support request
       # ids or subscriptions. Everything else is sent tagged with request id
       # for new clients.
