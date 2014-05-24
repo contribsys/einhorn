@@ -15,37 +15,45 @@ module Helpers
       options = options.dup
       einhorn_command = options.delete(:einhorn_command) { default_einhorn_command }
       expected_exit_code = options.delete(:expected_exit_code) { nil }
-      cwd = options.delete(:cwd) { einhorn_code_dir }
+      output_callback = options.delete(:output_callback) { nil }
 
       stdout, stderr = "", ""
       communicator = nil
       process = Bundler.with_clean_env do
-        Dir.chdir(cwd) do
-          default_options = {
-            :stdout => Subprocess::PIPE,
-            :stderr => Subprocess::PIPE,
-            :stdin => '/dev/null',
-          }
-          Subprocess::Process.new(Array(einhorn_command) + cmdline, default_options.merge(options))
-        end
+        default_options = {
+          :stdout => Subprocess::PIPE,
+          :stderr => Subprocess::PIPE,
+          :stdin => '/dev/null',
+          :cwd => einhorn_code_dir
+        }
+        Subprocess::Process.new(Array(einhorn_command) + cmdline, default_options.merge(options))
       end
+
+      status = nil
       begin
         communicator = Thread.new { stdout, stderr = process.communicate }
         yield(process) if block_given?
-      ensure
-        status = -1
-        begin
-          Timeout.timeout(10) do  # (Argh, I'm so sorry)
-            status = process.wait
-          end
-        rescue Timeout::Error
-          $stderr.puts "Could not get Einhorn to quit within 10 seconds, killing it forcefully..."
-          process.send_signal("KILL")
-          status = process.wait
+      rescue Exception
+        unless (status = process.poll) && status.exited?
+          process.terminate
         end
-        assert_equal(expected_exit_code, status.exitstatus) unless expected_exit_code == nil
+        raise
+      ensure
+        unless (status = process.poll) && status.exited?
+          begin
+            Timeout.timeout(10) do  # (Argh, I'm so sorry)
+              status = process.wait
+            end
+          rescue Timeout::Error
+            $stderr.puts "Could not get Einhorn to quit within 10 seconds, killing it forcefully..."
+            process.send_signal("KILL")
+            status = process.wait
+          rescue Errno::ECHILD
+            # Process is dead!
+          end
+        end
         communicator.join
-        return stdout, stderr
+        output_callback.call(stdout, stderr) if output_callback
       end
     end
 
