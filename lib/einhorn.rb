@@ -341,6 +341,7 @@ module Einhorn
       cmdline << Einhorn::TransientState.script_name
     end
     cmdline += prefix
+    cmdline << '--'
     cmdline += Einhorn::State.cmd
     [cmdline[0], cmdline[1..-1]]
   end

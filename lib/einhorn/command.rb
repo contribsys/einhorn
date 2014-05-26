@@ -238,7 +238,7 @@ module Einhorn
       end
 
       begin
-        respawn_commandline = Einhorn.upgrade_commandline(['--with-state-fd', read.fileno.to_s, '--'])
+        respawn_commandline = Einhorn.upgrade_commandline(['--with-state-fd', read.fileno.to_s])
         respawn_commandline << { :close_others => false }
         Einhorn.log_info("About to re-exec as #{respawn_commandline.inspect}")
         upgrade_cmd, upgrade_args =
