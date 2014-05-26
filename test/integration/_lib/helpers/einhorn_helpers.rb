@@ -32,7 +32,14 @@ module Helpers
 
       status = nil
       begin
-        communicator = Thread.new { stdout, stderr = process.communicate }
+        communicator = Thread.new do
+          begin
+            stdout, stderr = process.communicate
+          rescue Errno::ECHILD
+            # It's dead, and we're not getting anything. This is
+            # peaceful.
+          end
+        end
         yield(process) if block_given?
       rescue Exception => e
         unless (status = process.poll) && status.exited?
