@@ -86,7 +86,7 @@ module Einhorn
         :argv => [],
         :environ => {},
         :has_outstanding_spinup_timer => false,
-        :re_exec_commandline => nil,
+        :reexec_commandline => nil,
         :stateful => nil,
         # Holds references so that the GC doesn't go and close your sockets.
         :socket_handles => Set.new
@@ -335,8 +335,8 @@ module Einhorn
   # Einhorn for upgrades.
   def self.upgrade_commandline(prefix=[])
     cmdline = []
-    if Einhorn::TransientState.re_exec_commandline
-      cmdline += Einhorn::TransientState.re_exec_commandline
+    if Einhorn::TransientState.reexec_commandline
+      cmdline += Einhorn::TransientState.reexec_commandline
     else
       cmdline << Einhorn::TransientState.script_name
     end
