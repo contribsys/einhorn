@@ -359,8 +359,6 @@ module Einhorn
   end
 
   def self.run
-    dump_environment_info
-
     Einhorn::Command::Interface.init
     Einhorn::Event.init
 
