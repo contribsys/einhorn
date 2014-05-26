@@ -239,11 +239,11 @@ module Einhorn
 
       begin
         respawn_commandline = Einhorn.upgrade_commandline(['--with-state-fd', read.fileno.to_s, '--'])
+        respawn_commandline << { :close_others => false }
         Einhorn.log_info("About to re-exec as #{respawn_commandline.inspect}")
         upgrade_cmd, upgrade_args =
                      Einhorn::Compat.exec(
-                       *respawn_commandline,
-                       :close_others => false)
+                       *respawn_commandline)
       rescue SystemCallError => e
         Einhorn.log_error("Could not reload! Attempting to continue. Error was: #{e}")
         Einhorn::State.reloading_for_preload_upgrade = false
