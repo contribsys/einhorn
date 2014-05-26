@@ -305,7 +305,7 @@ if true # $0 == __FILE__
     end
 
     opts.on('--upgrade-check', '[Internal option] Check if Einhorn can exec itself and exit with status 0 before loading code') do
-      Einhorn.sanity_check
+      Einhorn.dump_environment_info
       exit 0
     end
 
