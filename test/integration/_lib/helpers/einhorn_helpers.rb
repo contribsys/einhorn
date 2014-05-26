@@ -112,11 +112,12 @@ module Helpers
 
 
     def read_from_port
-      socket = Socket.new(Socket::PF_INET, Socket::SOCK_STREAM)
+      ewouldblock = RUBY_VERSION >= '1.9.0' ? IO::WaitWritable : Errno::EINPROGRESS
+      socket = Socket.new(Socket::PF_INET, Socket::SOCK_STREAM, 0)
       sockaddr = Socket.pack_sockaddr_in(@port, '127.0.0.1')
       begin
         socket.connect_nonblock(sockaddr)
-      rescue IO::WaitWritable
+      rescue ewouldblock
         IO.select(nil, [socket], [], 5)
         begin
           socket.connect_nonblock(sockaddr)
