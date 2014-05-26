@@ -224,6 +224,9 @@ module Einhorn
       # Reload the original environment
       ENV.clear
       ENV.update(Einhorn::TransientState.environ)
+      Einhorn::State.drop_environment_variables.each do |var|
+        ENV.delete(var)
+      end
 
       upgrade_sentinel = fork do
         Einhorn::TransientState.whatami = :upgrade_sentinel

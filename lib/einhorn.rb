@@ -73,6 +73,7 @@ module Einhorn
         :last_upgraded => nil,
         :nice => {:master => nil, :worker => nil, :renice_cmd => '/usr/bin/renice'},
         :reexec_commandline => nil,
+        :drop_environment_variables => [],
       }
     end
   end

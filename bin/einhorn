@@ -275,8 +275,8 @@ if true # $0 == __FILE__
       Einhorn::Command.louder(false)
     end
 
-    opts.on('--drop-env-var=VAR_NAME', 'Delete VAR_NAME from the environment that is restored on upgrade') do |var|
-      Einhorn::TransientState.environ.delete(var)
+    opts.on('--drop-env-var VAR_NAME', 'Delete VAR_NAME from the environment that is restored on upgrade') do |var|
+      Einhorn::State.drop_environment_variables << var
     end
 
     opts.on('--reexec-as=CMDLINE', 'Substitute CMDLINE for \"einhorn\" when upgrading') do |cmdline|
