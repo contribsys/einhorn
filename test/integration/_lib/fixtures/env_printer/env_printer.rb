@@ -3,8 +3,6 @@ require 'socket'
 require 'einhorn/worker'
 
 def einhorn_main
-  variable_to_write = ARGV[0]
-
   $stderr.puts "Worker starting up!"
   serv = Socket.for_fd(ENV['EINHORN_FD_0'].to_i)
   $stderr.puts "Worker has a socket"
@@ -14,7 +12,11 @@ def einhorn_main
   while true
     s, addrinfo = serv.accept
     $stderr.puts "Worker got a socket!"
-    s.write(ENV[variable_to_write].to_s)
+    output = ""
+    ARGV.each do |variable_to_write|
+      output += ENV[variable_to_write].to_s
+    end
+    s.write(output)
     s.flush
     s.close
     $stderr.puts "Worker closed its socket"

@@ -1,5 +1,6 @@
 require 'subprocess'
 require 'timeout'
+require 'tmpdir'
 
 module Helpers
   module EinhornHelpers
@@ -33,7 +34,7 @@ module Helpers
       begin
         communicator = Thread.new { stdout, stderr = process.communicate }
         yield(process) if block_given?
-      rescue Exception
+      rescue Exception => e
         unless (status = process.poll) && status.exited?
           process.terminate
         end
@@ -98,6 +99,24 @@ module Helpers
       until File.exist?(path)
         sleep 0.01
       end
+    end
+
+
+    def read_from_port
+      socket = Socket.new(Socket::PF_INET, Socket::SOCK_STREAM)
+      sockaddr = Socket.pack_sockaddr_in(@port, '127.0.0.1')
+      begin
+        socket.connect_nonblock(sockaddr)
+      rescue IO::WaitWritable
+        IO.select(nil, [socket], [], 5)
+        begin
+          socket.connect_nonblock(sockaddr)
+        rescue Errno::EISCONN
+        end
+      end
+      socket.read.chomp
+    ensure
+      socket.close if socket
     end
   end
 end
