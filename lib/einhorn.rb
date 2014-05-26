@@ -71,7 +71,8 @@ module Einhorn
         :lockfile => nil,
         :consecutive_deaths_before_ack => 0,
         :last_upgraded => nil,
-        :nice => {:master => nil, :worker => nil, :renice_cmd => '/usr/bin/renice'}
+        :nice => {:master => nil, :worker => nil, :renice_cmd => '/usr/bin/renice'},
+        :reexec_commandline => nil,
       }
     end
   end
@@ -86,7 +87,6 @@ module Einhorn
         :argv => [],
         :environ => {},
         :has_outstanding_spinup_timer => false,
-        :reexec_commandline => nil,
         :stateful => nil,
         # Holds references so that the GC doesn't go and close your sockets.
         :socket_handles => Set.new
@@ -335,8 +335,8 @@ module Einhorn
   # Einhorn for upgrades.
   def self.upgrade_commandline(prefix=[])
     cmdline = []
-    if Einhorn::TransientState.reexec_commandline
-      cmdline += Einhorn::TransientState.reexec_commandline
+    if Einhorn::State.reexec_commandline
+      cmdline += Einhorn::State.reexec_commandline
     else
       cmdline << Einhorn::TransientState.script_name
     end

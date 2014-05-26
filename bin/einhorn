@@ -280,7 +280,7 @@ if true # $0 == __FILE__
     end
 
     opts.on('--reexec-as=CMDLINE', 'Substitute CMDLINE for \"einhorn\" when upgrading') do |cmdline|
-      Einhorn::TransientState.reexec_commandline = Shellwords.shellsplit(cmdline)
+      Einhorn::State.reexec_commandline = Shellwords.shellsplit(cmdline)
     end
 
     Einhorn.plugins_send(:optparse, opts)
