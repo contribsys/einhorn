@@ -349,11 +349,11 @@ module Einhorn
 
   # Perform startup checks to ensure our environment is sane
   def self.dump_environment_info
-    log_info("Running under Ruby #{RUBY_VERSION}")
-    log_info("Rbenv ruby version: #{ENV['RBENV_VERSION']}") if ENV['RBENV_VERSION']
+    log_info("Running under Ruby #{RUBY_VERSION}", :environment)
+    log_info("Rbenv ruby version: #{ENV['RBENV_VERSION']}", :environment) if ENV['RBENV_VERSION']
     begin
       bundler_gem = Gem::Specification.find_by_name('bundler')
-      log_info("Using Bundler #{bundler_gem.version.to_s}")
+      log_info("Using Bundler #{bundler_gem.version.to_s}", :environment)
     rescue Gem::LoadError
     end
   end
