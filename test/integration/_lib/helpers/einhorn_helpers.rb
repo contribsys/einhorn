@@ -95,9 +95,18 @@ module Helpers
       open_port.close
     end
 
-    def wait_for_command_socket(path)
-      until File.exist?(path)
-        sleep 0.01
+    def wait_for_open_port
+      max_retries = 50
+      begin
+        read_from_port
+      rescue Errno::ECONNREFUSED
+        max_retries -= 1
+        if max_retries <= 0
+          raise
+        else
+          sleep 0.1
+          retry
+        end
       end
     end
 

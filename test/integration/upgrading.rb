@@ -16,7 +16,7 @@ class UpgradeTests < EinhornIntegrationTestCase
     it 'can restart' do
       File.open(File.join(@dir, "version"), 'w') { |f| f.write("0") }
       with_running_einhorn(%W{einhorn -m manual -b 127.0.0.1:#{@port} -d #{@socket_path} -- ruby #{@server_program}}) do |process|
-        wait_for_command_socket(@socket_path)
+        wait_for_open_port
         assert_equal("0", read_from_port, "Should report the initial version")
 
         File.open(File.join(@dir, "version"), 'w') { |f| f.write("1") }
@@ -45,7 +45,7 @@ class UpgradeTests < EinhornIntegrationTestCase
         with_running_einhorn(%W{einhorn -m manual -b 127.0.0.1:#{@port} --reexec-as=#{reexec_cmdline} -d #{@socket_path} -- ruby #{@server_program} VAR},
                              :env => ENV.to_hash.merge({'VAR' => 'a'})) do |process|
 
-          wait_for_command_socket(@socket_path)
+          wait_for_open_port
           einhornsh(%W{-d #{@socket_path} -e upgrade})
           assert_equal("a", read_from_port, "Should report the upgraded version")
 
@@ -61,7 +61,7 @@ class UpgradeTests < EinhornIntegrationTestCase
           with_running_einhorn(%W{einhorn -m manual -b 127.0.0.1:#{@port} --reexec-as=#{reexec_cmdline} -d #{@socket_path} -- ruby #{@server_program} VAR},
                                :env => ENV.to_hash.merge({'VAR' => 'a'})) do |process|
 
-            wait_for_command_socket(@socket_path)
+            wait_for_open_port
             einhornsh(%W{-d #{@socket_path} -e upgrade})
             assert_equal("b", read_from_port, "Should report the upgraded version")
 
@@ -78,7 +78,7 @@ class UpgradeTests < EinhornIntegrationTestCase
           with_running_einhorn(%W{einhorn -m manual -p #{@server_program} -b 127.0.0.1:#{@port} --reexec-as=#{reexec_cmdline} -d #{@socket_path} -- ruby #{@server_program} VAR},
                                :env => ENV.to_hash.merge({'VAR' => 'a'})) do |process|
 
-            wait_for_command_socket(@socket_path)
+            wait_for_open_port
             einhornsh(%W{-d #{@socket_path} -e upgrade})
             assert_equal("b", read_from_port, "Should report the upgraded version")
 
@@ -101,7 +101,7 @@ class UpgradeTests < EinhornIntegrationTestCase
     it %{removes the variable from its children's environment} do
       with_running_einhorn(%W{einhorn -m manual -b 127.0.0.1:#{@port} --drop-env-var=VAR -d #{@socket_path} -- ruby #{@server_program} VAR},
                            :env => ENV.to_hash.merge({'VAR' => 'a'})) do |process|
-        wait_for_command_socket(@socket_path)
+        wait_for_open_port
         assert_equal("a", read_from_port, "Should report $VAR initially")
 
         einhornsh(%W{-d #{@socket_path} -e upgrade})
@@ -115,7 +115,7 @@ class UpgradeTests < EinhornIntegrationTestCase
       reexec_cmdline = 'env VAR2=b bundle exec einhorn'
       with_running_einhorn(%W{einhorn -m manual -b 127.0.0.1:#{@port} --drop-env-var=VAR1 --drop-env-var=VAR2 -d #{@socket_path} --reexec-as=#{reexec_cmdline} -- ruby #{@server_program} VAR1 VAR2},
                            :env => ENV.to_hash.merge({'VAR1' => 'a', 'VAR2' => 'a'})) do |process|
-        wait_for_command_socket(@socket_path)
+        wait_for_open_port
         assert_equal("aa", read_from_port, "Should report both $VAR1 and $VAR2 initially")
 
         einhornsh(%W{-d #{@socket_path} -e upgrade})
