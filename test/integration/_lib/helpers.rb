@@ -1,4 +1,4 @@
 module Helpers
 end
 
-require_relative 'helpers/einhorn_helpers'
+require(File.expand_path('helpers/einhorn_helpers', File.dirname(__FILE__)))

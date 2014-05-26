@@ -1,4 +1,4 @@
-require_relative '_lib'
+require(File.expand_path('_lib', File.dirname(__FILE__)))
 
 class StartupTest < EinhornIntegrationTestCase
   include Helpers::EinhornHelpers

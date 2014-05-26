@@ -1,4 +1,4 @@
-require_relative '_lib'
+require(File.expand_path('_lib', File.dirname(__FILE__)))
 require 'socket'
 
 class UpgradeTests < EinhornIntegrationTestCase
@@ -14,12 +14,12 @@ class UpgradeTests < EinhornIntegrationTestCase
     after { cleanup_fixtured_directories }
 
     it 'can restart' do
-      File.write(File.join(@dir, "version"), "0")
+      File.open(File.join(@dir, "version"), 'w') { |f| f.write("0") }
       with_running_einhorn(%W{einhorn -m manual -b 127.0.0.1:#{@port} -d #{@socket_path} -- ruby #{@server_program}}) do |process|
         wait_for_command_socket(@socket_path)
         assert_equal("0", read_from_port, "Should report the initial version")
 
-        File.write(File.join(@dir, "version"), "1")
+        File.open(File.join(@dir, "version"), 'w') { |f| f.write("1") }
         einhornsh(%W{-d #{@socket_path} -e upgrade})
         assert_equal("1", read_from_port, "Should report the upgraded version")
 
@@ -39,7 +39,6 @@ class UpgradeTests < EinhornIntegrationTestCase
 
     describe 'when running with --reexec-as' do
       it 'preserves environment variables across restarts' do
-        File.write(File.join(@dir, "version"), "0")
         # exec the new einhorn with the same environment:
         reexec_cmdline = 'env VAR=a bundle exec einhorn'
 
@@ -56,7 +55,6 @@ class UpgradeTests < EinhornIntegrationTestCase
 
       describe 'without preloading' do
         it 'can update environment variables when the reexec command line says to' do
-          File.write(File.join(@dir, "version"), "0")
           # exec the new einhorn with the same environment:
           reexec_cmdline = 'env VAR=b OINK=b bundle exec einhorn'
 
