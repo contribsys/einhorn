@@ -334,14 +334,14 @@ module Einhorn
 
   # Construct and a command and args that can be used to re-exec
   # Einhorn for upgrades.
-  def self.upgrade_commandline(prefix=[])
+  def self.upgrade_commandline(einhorn_flags=[])
     cmdline = []
     if Einhorn::State.reexec_commandline
       cmdline += Einhorn::State.reexec_commandline
     else
       cmdline << Einhorn::TransientState.script_name
     end
-    cmdline += prefix
+    cmdline += einhorn_flags
     cmdline << '--'
     cmdline += Einhorn::State.cmd
     [cmdline[0], cmdline[1..-1]]
