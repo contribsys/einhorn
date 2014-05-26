@@ -193,7 +193,7 @@ module Einhorn
         return
       end
 
-      Einhorn.log_info("Reloading einhorn (#{Einhorn::TransientState.script_name})...")
+      Einhorn.log_info("Reloading einhorn master (#{Einhorn::TransientState.script_name})...", :reload)
 
       # In case there's anything lurking
       $stdout.flush
@@ -234,7 +234,7 @@ module Einhorn
       end
       Process.wait(upgrade_sentinel)
       unless $?.exitstatus.zero?
-        Einhorn.log_error("Can not initiate reload since sentinel process exited with #{$?.exitstatus}")
+        Einhorn.log_error("Can not initiate reload since sentinel process exited with #{$?.exitstatus}", :reload)
         Einhorn::State.reloading_for_preload_upgrade = false
         read.close
         return
@@ -243,12 +243,10 @@ module Einhorn
       begin
         respawn_commandline = Einhorn.upgrade_commandline(['--with-state-fd', read.fileno.to_s])
         respawn_commandline << { :close_others => false }
-        Einhorn.log_info("About to re-exec as #{respawn_commandline.inspect}")
-        upgrade_cmd, upgrade_args =
-                     Einhorn::Compat.exec(
-                       *respawn_commandline)
+        Einhorn.log_info("About to re-exec einhorn master as #{respawn_commandline.inspect}", :reload)
+        Einhorn::Compat.exec(*respawn_commandline)
       rescue SystemCallError => e
-        Einhorn.log_error("Could not reload! Attempting to continue. Error was: #{e}")
+        Einhorn.log_error("Could not reload! Attempting to continue. Error was: #{e}", :reload)
         Einhorn::State.reloading_for_preload_upgrade = false
         read.close
       end
