@@ -57,7 +57,7 @@ module Einhorn
         :respawn => true,
         :upgrading => false,
         :smooth_upgrade => false,
-        :reloading_for_preload_upgrade => false,
+        :reloading_for_upgrade => false,
         :path => nil,
         :cmd_name => nil,
         :verbosity => 1,
@@ -382,9 +382,9 @@ module Einhorn
     preload
 
     # In the middle of upgrading
-    if Einhorn::State.reloading_for_preload_upgrade
+    if Einhorn::State.reloading_for_upgrade
       Einhorn::Command.upgrade_workers
-      Einhorn::State.reloading_for_preload_upgrade = false
+      Einhorn::State.reloading_for_upgrade = false
     end
 
     while Einhorn::State.respawn || Einhorn::State.children.size > 0

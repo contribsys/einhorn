@@ -235,7 +235,7 @@ module Einhorn
       Process.wait(upgrade_sentinel)
       unless $?.exitstatus.zero?
         Einhorn.log_error("Can not initiate reload since sentinel process exited with #{$?.exitstatus}", :reload)
-        Einhorn::State.reloading_for_preload_upgrade = false
+        Einhorn::State.reloading_for_upgrade = false
         read.close
         return
       end
@@ -247,7 +247,7 @@ module Einhorn
         Einhorn::Compat.exec(*respawn_commandline)
       rescue SystemCallError => e
         Einhorn.log_error("Could not reload! Attempting to continue. Error was: #{e}", :reload)
-        Einhorn::State.reloading_for_preload_upgrade = false
+        Einhorn::State.reloading_for_upgrade = false
         read.close
       end
     end
@@ -385,7 +385,7 @@ module Einhorn
       options = {:smooth => false}.merge(options)
 
       Einhorn::State.smooth_upgrade = options.fetch(:smooth)
-      reload_for_preload_upgrade
+      reload_for_upgrade
     end
 
     def self.full_upgrade_smooth
@@ -395,8 +395,8 @@ module Einhorn
       full_upgrade(:smooth => false)
     end
 
-    def self.reload_for_preload_upgrade
-      Einhorn::State.reloading_for_preload_upgrade = true
+    def self.reload_for_upgrade
+      Einhorn::State.reloading_for_upgrade = true
       reload
     end
 
