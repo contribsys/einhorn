@@ -221,26 +221,15 @@ module Einhorn
       end
       write.close
 
-      # Reload the original environment
-      ENV.clear
-      ENV.update(Einhorn::TransientState.environ)
-      Einhorn::State.drop_environment_variables.each do |var|
-        ENV.delete(var)
-      end
-
-      upgrade_sentinel = fork do
-        Einhorn::TransientState.whatami = :upgrade_sentinel
-        Einhorn::Compat.exec(*Einhorn.upgrade_commandline(['--upgrade-check']))
-      end
-      Process.wait(upgrade_sentinel)
-      unless $?.exitstatus.zero?
-        Einhorn.log_error("Can not initiate reload since sentinel process exited with #{$?.exitstatus}", :reload)
+      unless Einhorn.can_safely_reload?
+        Einhorn.log_error("Can not initiate einhorn master reload safely, aborting", :reload)
         Einhorn::State.reloading_for_upgrade = false
         read.close
         return
       end
 
       begin
+        Einhorn.initialize_reload_environment
         respawn_commandline = Einhorn.upgrade_commandline(['--with-state-fd', read.fileno.to_s])
         respawn_commandline << { :close_others => false }
         Einhorn.log_info("About to re-exec einhorn master as #{respawn_commandline.inspect}", :reload)

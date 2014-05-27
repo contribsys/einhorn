@@ -347,7 +347,36 @@ module Einhorn
     [cmdline[0], cmdline[1..-1]]
   end
 
-  # Perform startup checks to ensure our environment is sane
+  # Returns true if a reload of the einhorn master via re-execing is
+  # not likely to be completely unsafe (that is, the new process's
+  # environment won't prevent it from loading its code on exec).
+  def self.can_safely_reload?
+    upgrade_sentinel = fork do
+      Einhorn::TransientState.whatami = :upgrade_sentinel
+      Einhorn.initialize_reload_environment
+      Einhorn::Compat.exec(*Einhorn.upgrade_commandline(['--upgrade-check']))
+    end
+    Process.wait(upgrade_sentinel)
+    $?.exitstatus.zero?
+  end
+
+  # Set up the environment for reloading the einhorn master:
+  # 1. Clear the current process's environment,
+  # 2. Set it to the environmment at startup
+  # 3. Delete all variables marked to be dropped via `--drop-env-var`
+  #
+  # This method is safe to call in the master only before `exec`ing
+  # something.
+  def self.initialize_reload_environment
+    ENV.clear
+    ENV.update(Einhorn::TransientState.environ)
+    Einhorn::State.drop_environment_variables.each do |var|
+      ENV.delete(var)
+    end
+  end
+
+  # Log info about the environment as observed by ruby on
+  # startup. Currently, this means the bundler and rbenv versions.
   def self.dump_environment_info
     log_info("Running under Ruby #{RUBY_VERSION}", :environment)
     log_info("Rbenv ruby version: #{ENV['RBENV_VERSION']}", :environment) if ENV['RBENV_VERSION']
