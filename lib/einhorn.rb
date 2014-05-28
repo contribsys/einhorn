@@ -5,6 +5,7 @@ require 'set'
 require 'socket'
 require 'tmpdir'
 require 'yaml'
+require 'shellwords'
 
 require 'einhorn/third/little-plugger'
 
@@ -56,7 +57,7 @@ module Einhorn
         :respawn => true,
         :upgrading => false,
         :smooth_upgrade => false,
-        :reloading_for_preload_upgrade => false,
+        :reloading_for_upgrade => false,
         :path => nil,
         :cmd_name => nil,
         :verbosity => 1,
@@ -70,7 +71,9 @@ module Einhorn
         :lockfile => nil,
         :consecutive_deaths_before_ack => 0,
         :last_upgraded => nil,
-        :nice => {:master => nil, :worker => nil, :renice_cmd => '/usr/bin/renice'}
+        :nice => {:master => nil, :worker => nil, :renice_cmd => '/usr/bin/renice'},
+        :reexec_commandline => nil,
+        :drop_environment_variables => [],
       }
     end
   end
@@ -329,6 +332,61 @@ module Einhorn
     end
   end
 
+  # Construct and a command and args that can be used to re-exec
+  # Einhorn for upgrades.
+  def self.upgrade_commandline(einhorn_flags=[])
+    cmdline = []
+    if Einhorn::State.reexec_commandline
+      cmdline += Einhorn::State.reexec_commandline
+    else
+      cmdline << Einhorn::TransientState.script_name
+    end
+    cmdline += einhorn_flags
+    cmdline << '--'
+    cmdline += Einhorn::State.cmd
+    [cmdline[0], cmdline[1..-1]]
+  end
+
+  # Returns true if a reload of the einhorn master via re-execing is
+  # not likely to be completely unsafe (that is, the new process's
+  # environment won't prevent it from loading its code on exec).
+  def self.can_safely_reload?
+    upgrade_sentinel = fork do
+      Einhorn::TransientState.whatami = :upgrade_sentinel
+      Einhorn.initialize_reload_environment
+      Einhorn::Compat.exec(*Einhorn.upgrade_commandline(['--upgrade-check']))
+    end
+    Process.wait(upgrade_sentinel)
+    $?.exitstatus.zero?
+  end
+
+  # Set up the environment for reloading the einhorn master:
+  # 1. Clear the current process's environment,
+  # 2. Set it to the environmment at startup
+  # 3. Delete all variables marked to be dropped via `--drop-env-var`
+  #
+  # This method is safe to call in the master only before `exec`ing
+  # something.
+  def self.initialize_reload_environment
+    ENV.clear
+    ENV.update(Einhorn::TransientState.environ)
+    Einhorn::State.drop_environment_variables.each do |var|
+      ENV.delete(var)
+    end
+  end
+
+  # Log info about the environment as observed by ruby on
+  # startup. Currently, this means the bundler and rbenv versions.
+  def self.dump_environment_info
+    log_info("Running under Ruby #{RUBY_VERSION}", :environment)
+    log_info("Rbenv ruby version: #{ENV['RBENV_VERSION']}", :environment) if ENV['RBENV_VERSION']
+    begin
+      bundler_gem = Gem::Specification.find_by_name('bundler')
+      log_info("Using Bundler #{bundler_gem.version.to_s}", :environment)
+    rescue Gem::LoadError
+    end
+  end
+
   def self.run
     Einhorn::Command::Interface.init
     Einhorn::Event.init
@@ -353,9 +411,9 @@ module Einhorn
     preload
 
     # In the middle of upgrading
-    if Einhorn::State.reloading_for_preload_upgrade
+    if Einhorn::State.reloading_for_upgrade
       Einhorn::Command.upgrade_workers
-      Einhorn::State.reloading_for_preload_upgrade = false
+      Einhorn::State.reloading_for_upgrade = false
     end
 
     while Einhorn::State.respawn || Einhorn::State.children.size > 0

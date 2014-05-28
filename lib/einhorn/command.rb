@@ -193,7 +193,7 @@ module Einhorn
         return
       end
 
-      Einhorn.log_info("Reloading einhorn (#{Einhorn::TransientState.script_name})...")
+      Einhorn.log_info("Reloading einhorn master (#{Einhorn::TransientState.script_name})...", :reload)
 
       # In case there's anything lurking
       $stdout.flush
@@ -221,19 +221,22 @@ module Einhorn
       end
       write.close
 
-      # Reload the original environment
-      ENV.clear
-      ENV.update(Einhorn::TransientState.environ)
+      unless Einhorn.can_safely_reload?
+        Einhorn.log_error("Can not initiate einhorn master reload safely, aborting", :reload)
+        Einhorn::State.reloading_for_upgrade = false
+        read.close
+        return
+      end
 
       begin
-        Einhorn::Compat.exec(
-          Einhorn::TransientState.script_name,
-          ['--with-state-fd', read.fileno.to_s, '--'] + Einhorn::State.cmd,
-          :close_others => false
-          )
+        Einhorn.initialize_reload_environment
+        respawn_commandline = Einhorn.upgrade_commandline(['--with-state-fd', read.fileno.to_s])
+        respawn_commandline << { :close_others => false }
+        Einhorn.log_info("About to re-exec einhorn master as #{respawn_commandline.inspect}", :reload)
+        Einhorn::Compat.exec(*respawn_commandline)
       rescue SystemCallError => e
-        Einhorn.log_error("Could not reload! Attempting to continue. Error was: #{e}")
-        Einhorn::State.reloading_for_preload_upgrade = false
+        Einhorn.log_error("Could not reload! Attempting to continue. Error was: #{e}", :reload)
+        Einhorn::State.reloading_for_upgrade = false
         read.close
       end
     end
@@ -371,12 +374,7 @@ module Einhorn
       options = {:smooth => false}.merge(options)
 
       Einhorn::State.smooth_upgrade = options.fetch(:smooth)
-
-      if Einhorn::State.path && !Einhorn::State.reloading_for_preload_upgrade
-        reload_for_preload_upgrade
-      else
-        upgrade_workers
-      end
+      reload_for_upgrade
     end
 
     def self.full_upgrade_smooth
@@ -386,8 +384,8 @@ module Einhorn
       full_upgrade(:smooth => false)
     end
 
-    def self.reload_for_preload_upgrade
-      Einhorn::State.reloading_for_preload_upgrade = true
+    def self.reload_for_upgrade
+      Einhorn::State.reloading_for_upgrade = true
       reload
     end
 
