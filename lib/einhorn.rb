@@ -42,6 +42,9 @@ module Einhorn
 
   module State
     extend AbstractState
+
+    # WARNING: Don't change or remove these variables without thinking
+    # about backwards/forwards compatibility for upgrades/downgrades
     def self.default_state
       {
         :children => {},
