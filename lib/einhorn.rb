@@ -123,6 +123,7 @@ module Einhorn
 
     # Handle changes in state format updates from previous einhorn versions
     if store == Einhorn::State
+      # TODO: Drop this backwards compatibility hack when we hit 0.7
       if updated_state.include?(:reloading_for_preload_upgrade) &&
           !updated_state.include?(:reloading_for_upgrade)
         updated_state[:reloading_for_upgrade] = updated_state.delete(:reloading_for_preload_upgrade)
