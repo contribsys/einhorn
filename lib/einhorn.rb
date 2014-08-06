@@ -131,8 +131,8 @@ module Einhorn
     end
 
     default = store.default_state
-    added_keys = default.keys - old_state.keys
-    deleted_keys = old_state.keys - default.keys
+    added_keys = default.keys - updated_state.keys
+    deleted_keys = updated_state.keys - default.keys
     return [updated_state, message.first] if added_keys.length == 0 && deleted_keys.length == 0
 
     added_keys.each {|key| updated_state[key] = default[key]}
