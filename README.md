@@ -211,7 +211,12 @@ pass `-c <name>`.
     -q, --quiet                      Make output quiet (can be reconfigured on the fly)
     -s, --seconds N                  Number of seconds to wait until respawning
     -v, --verbose                    Make output verbose (can be reconfigured on the fly)
+        --drop-env-var VAR_NAME      Delete VAR_NAME from the environment that is restored on upgrade
+        --reexec-as=CMDLINE          Substitute CMDLINE for \"einhorn\" when upgrading
+        --nice MASTER[:WORKER=0][:RENICE_CMD=/usr/bin/renice]
+                                     Unix nice level at which to run the einhorn processes. If not running as root, make sure to ulimit -e as appopriate.
         --with-state-fd STATE        [Internal option] With file descriptor containing state
+        --upgrade-check              [Internal option] Check if Einhorn can exec itself and exit with status 0 before loading code
         --version                    Show version
 
 

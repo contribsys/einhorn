@@ -61,11 +61,8 @@ servers) to a wider array of applications.
 See https://stripe.com/blog/meet-einhorn for more background.
 
 Stripe currently uses Einhorn in production for a number of
-services. Our Thin + EventMachine servers currently require patches to
-both Thin and EventMachine (to support file-descriptor passing). You
-can obtain these patches from our public forks of the
-[respective](https://github.com/stripe/thin)
-[projects](https://github.com/stripe/eventmachine). Check out
+services. You can use Conrad Irwin's thin-attach_socket gem along with
+EventMachine-LE to support file-descriptor passing. Check out
 `example/thin_example` for an example of running Thin under Einhorn.
 
 ## Compatibility
