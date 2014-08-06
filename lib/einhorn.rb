@@ -120,23 +120,24 @@ module Einhorn
   def self.update_state(store, store_name, old_state)
     # TODO: handle format updates somehow? (probably need to write
     # special-case code for each)
+    message = []
     updated_state = old_state.dup
     if store == Einhorn::State
       if updated_state.include?(:reloading_for_preload_upgrade) &&
           !updated_state.include?(:reloading_for_upgrade)
         updated_state[:reloading_for_upgrade] = updated_state.delete(:reloading_for_preload_upgrade)
+        message << "upgraded :reloading_for_preload_upgrade to :reloading_for_upgrade"
       end
     end
 
     default = store.default_state
     added_keys = default.keys - old_state.keys
     deleted_keys = old_state.keys - default.keys
-    return [updated_state, nil] if added_keys.length == 0 && deleted_keys.length == 0
+    return [updated_state, message.first] if added_keys.length == 0 && deleted_keys.length == 0
 
     added_keys.each {|key| updated_state[key] = default[key]}
     deleted_keys.each {|key| updated_state.delete(key)}
 
-    message = []
     message << "adding default values for #{added_keys.inspect}"
     message << "deleting values for #{deleted_keys.inspect}"
     message = "State format for #{store_name} has changed: #{message.join(', ')}"
