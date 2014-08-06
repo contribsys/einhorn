@@ -23,6 +23,7 @@ module Einhorn
     def default_state; raise NotImplementedError.new('Override in extended modules'); end
     def state; @state ||= default_state; end
     def state=(v); @state = v; end
+    def dumpable_state; state; end
 
     def method_missing(name, *args)
       if (name.to_s =~ /(.*)=$/) && state.has_key?($1.to_sym)
@@ -78,6 +79,12 @@ module Einhorn
         :reexec_commandline => nil,
         :drop_environment_variables => [],
       }
+    end
+
+    def self.dumpable_state
+      dump = state
+      dump[:reloading_for_preload_upgrade] = dump[:reloading_for_upgrade]
+      dump
     end
   end
 

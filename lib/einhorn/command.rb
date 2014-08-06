@@ -171,13 +171,13 @@ module Einhorn
     end
 
     def self.dumpable_state
-      global_state = Einhorn::State.state
+      global_state = Einhorn::State.dumpable_state
       descriptor_state = Einhorn::Event.persistent_descriptors.map do |descriptor|
         descriptor.to_state
       end
       plugin_state = {}
       Einhorn.plugins.each do |name, plugin|
-        plugin_state[name] = plugin::State.state if plugin.const_defined?(:State)
+        plugin_state[name] = plugin::State.dumpable_state if plugin.const_defined?(:State)
       end
 
       {
