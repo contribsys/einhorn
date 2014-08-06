@@ -118,10 +118,10 @@ module Einhorn
   end
 
   def self.update_state(store, store_name, old_state)
-    # TODO: handle format updates somehow? (probably need to write
-    # special-case code for each)
     message = []
     updated_state = old_state.dup
+
+    # Handle changes in state format updates from previous einhorn versions
     if store == Einhorn::State
       if updated_state.include?(:reloading_for_preload_upgrade) &&
           !updated_state.include?(:reloading_for_upgrade)
