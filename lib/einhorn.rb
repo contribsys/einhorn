@@ -121,6 +121,13 @@ module Einhorn
     # TODO: handle format updates somehow? (probably need to write
     # special-case code for each)
     updated_state = old_state.dup
+    if store == Einhorn::State
+      if updated_state.include?(:reloading_for_preload_upgrade) &&
+          !updated_state.include?(:reloading_for_upgrade)
+        updated_state[:reloading_for_upgrade] = updated_state.delete(:reloading_for_preload_upgrade)
+      end
+    end
+
     default = store.default_state
     added_keys = default.keys - old_state.keys
     deleted_keys = old_state.keys - default.keys
