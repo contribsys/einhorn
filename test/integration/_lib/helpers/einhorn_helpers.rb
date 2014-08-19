@@ -9,7 +9,11 @@ module Helpers
     end
 
     def default_einhorn_command
-      ['bundle', 'exec', '--keep-file-descriptors', File.expand_path('bin/einhorn', einhorn_code_dir)]
+      cmd = ['bundle', 'exec']
+      cmd << '--keep-file-descriptors' if RUBY_VERSION >= '2.0'
+      cmd << File.expand_path('bin/einhorn', einhorn_code_dir)
+
+      cmd
     end
 
     def with_running_einhorn(cmdline, options = {})
