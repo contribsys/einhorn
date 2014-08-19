@@ -15,12 +15,16 @@ class ClientTest < EinhornTestCase
     "---%0A:foo:%0A- ! '%25bar'%0A- ! '%25baz'%0A\n"
   end
 
+  def serialized_2_0
+    "---%0A:foo:%0A- '%25bar'%0A- '%25baz'%0A\n"
+  end
+
   def serialized_2_1
     "---%0A:foo:%0A- \"%25bar\"%0A- \"%25baz\"%0A\n"
   end
 
   def serialized_options
-    [serialized_1_8, serialized_1_9, serialized_2_1]
+    [serialized_1_8, serialized_1_9, serialized_2_0, serialized_2_1]
   end
 
   describe "when sending a message" do
@@ -60,6 +64,16 @@ class ClientTest < EinhornTestCase
 
     it "deserializes and unescape a 1.9-style message as expected" do
       actual = Einhorn::Client::Transport.deserialize_message(serialized_1_9)
+      assert_equal(unserialized_message, actual)
+    end
+
+    it "deserializes and unescapes a 2.0-style message as expected" do
+      actual = Einhorn::Client::Transport.deserialize_message(serialized_2_0)
+      assert_equal(unserialized_message, actual)
+    end
+
+    it "deserializes and unescapes a 2.1-style message as expected" do
+      actual = Einhorn::Client::Transport.deserialize_message(serialized_2_1)
       assert_equal(unserialized_message, actual)
     end
 
