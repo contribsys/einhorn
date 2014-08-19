@@ -40,7 +40,7 @@ class UpgradeTests < EinhornIntegrationTestCase
     describe 'when running with --reexec-as' do
       it 'preserves environment variables across restarts' do
         # exec the new einhorn with the same environment:
-        reexec_cmdline = 'env VAR=a bundle exec einhorn'
+        reexec_cmdline = 'env VAR=a bundle exec --keep-file-descriptors einhorn'
 
         with_running_einhorn(%W{einhorn -m manual -b 127.0.0.1:#{@port} --reexec-as=#{reexec_cmdline} -d #{@socket_path} -- ruby #{@server_program} VAR},
                              :env => ENV.to_hash.merge({'VAR' => 'a'})) do |process|
@@ -56,7 +56,7 @@ class UpgradeTests < EinhornIntegrationTestCase
       describe 'without preloading' do
         it 'can update environment variables when the reexec command line says to' do
           # exec the new einhorn with the same environment:
-          reexec_cmdline = 'env VAR=b OINK=b bundle exec einhorn'
+          reexec_cmdline = 'env VAR=b OINK=b bundle exec --keep-file-descriptors einhorn'
 
           with_running_einhorn(%W{einhorn -m manual -b 127.0.0.1:#{@port} --reexec-as=#{reexec_cmdline} -d #{@socket_path} -- ruby #{@server_program} VAR},
                                :env => ENV.to_hash.merge({'VAR' => 'a'})) do |process|
@@ -73,7 +73,7 @@ class UpgradeTests < EinhornIntegrationTestCase
       describe 'with preloading' do
         it 'can update environment variables on preloaded code when the reexec command line says to' do
           # exec the new einhorn with the same environment:
-          reexec_cmdline = 'env VAR=b OINK=b bundle exec einhorn'
+          reexec_cmdline = 'env VAR=b OINK=b bundle exec --keep-file-descriptors einhorn'
 
           with_running_einhorn(%W{einhorn -m manual -p #{@server_program} -b 127.0.0.1:#{@port} --reexec-as=#{reexec_cmdline} -d #{@socket_path} -- ruby #{@server_program} VAR},
                                :env => ENV.to_hash.merge({'VAR' => 'a'})) do |process|
@@ -112,7 +112,7 @@ class UpgradeTests < EinhornIntegrationTestCase
     end
 
     it %{causes an upgrade with --reexec-as to not clobber the new environment} do
-      reexec_cmdline = 'env VAR2=b bundle exec einhorn'
+      reexec_cmdline = 'env VAR2=b bundle exec --keep-file-descriptors einhorn'
       with_running_einhorn(%W{einhorn -m manual -b 127.0.0.1:#{@port} --drop-env-var=VAR1 --drop-env-var=VAR2 -d #{@socket_path} --reexec-as=#{reexec_cmdline} -- ruby #{@server_program} VAR1 VAR2},
                            :env => ENV.to_hash.merge({'VAR1' => 'a', 'VAR2' => 'a'})) do |process|
         wait_for_open_port

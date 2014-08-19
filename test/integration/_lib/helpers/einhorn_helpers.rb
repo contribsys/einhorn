@@ -9,7 +9,7 @@ module Helpers
     end
 
     def default_einhorn_command
-      ['bundle', 'exec', File.expand_path('bin/einhorn', einhorn_code_dir)]
+      ['bundle', 'exec', '--keep-file-descriptors', File.expand_path('bin/einhorn', einhorn_code_dir)]
     end
 
     def with_running_einhorn(cmdline, options = {})
