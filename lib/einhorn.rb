@@ -129,6 +129,13 @@ module Einhorn
         updated_state[:reloading_for_upgrade] = updated_state.delete(:reloading_for_preload_upgrade)
         message << "upgraded :reloading_for_preload_upgrade to :reloading_for_upgrade"
       end
+
+      # For a period, we created children entries for state_passers,
+      # but we don't want that (in particular, it probably died before
+      # we could setup our SIGCHLD handler
+      if updated_state[:children]
+        updated_state[:children].delete_if {|k, v| v[:type] == :state_passer}
+      end
     end
 
     default = store.default_state

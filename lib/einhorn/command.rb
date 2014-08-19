@@ -204,9 +204,6 @@ module Einhorn
       fork do
         Einhorn::TransientState.whatami = :state_passer
         Einhorn::State.generation += 1
-        Einhorn::State.children[$$] = {
-          :type => :state_passer
-        }
         read.close
 
         begin
