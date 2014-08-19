@@ -15,12 +15,18 @@ class ClientTest < EinhornTestCase
     "---%0A:foo:%0A- ! '%25bar'%0A- ! '%25baz'%0A\n"
   end
 
+  def serialized_2_1
+    "---%0A:foo:%0A- \"%25bar\"%0A- \"%25baz\"%0A\n"
+  end
+
+  def serialized_options
+    [serialized_1_8, serialized_1_9, serialized_2_1]
+  end
+
   describe "when sending a message" do
     it "writes a serialized line" do
       socket = mock
-      socket.expects(:write).with do |write|
-        write == serialized_1_8 || write == serialized_1_9
-      end
+      socket.expects(:write).with {|write| serialized_options.include?(write)}
       Einhorn::Client::Transport.send_message(socket, unserialized_message)
     end
   end
@@ -44,7 +50,7 @@ class ClientTest < EinhornTestCase
   describe "when {de,}serializing a message" do
     it "serializes and escape a message as expected" do
       actual = Einhorn::Client::Transport.serialize_message(unserialized_message)
-      assert(actual == serialized_1_8 || actual == serialized_1_9, "Actual message is #{actual.inspect}")
+      assert(serialized_options.include?(actual), "Actual message is #{actual.inspect}")
     end
 
     it "deserializes and unescape a 1.8-style message as expected" do
