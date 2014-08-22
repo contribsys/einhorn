@@ -40,8 +40,6 @@ module Einhorn
       case type = spec[:type]
       when :worker
         Einhorn.log_info("===> Exited worker #{pid.inspect}#{extra}", :upgrade)
-      when :state_passer
-        Einhorn.log_debug("===> Exited state passing process #{pid.inspect}", :upgrade)
       else
         Einhorn.log_error("===> Exited process #{pid.inspect} has unrecgonized type #{type.inspect}: #{spec.inspect}", :upgrade)
       end
