@@ -1,5 +1,6 @@
 require(File.expand_path('_lib', File.dirname(__FILE__)))
 require 'socket'
+require 'einhorn/client'
 
 class UpgradeTests < EinhornIntegrationTestCase
   include Helpers::EinhornHelpers
@@ -48,6 +49,34 @@ class UpgradeTests < EinhornIntegrationTestCase
           wait_for_open_port
           einhornsh(%W{-d #{@socket_path} -e upgrade})
           assert_equal("a", read_from_port, "Should report the upgraded version")
+
+          process.terminate
+        end
+      end
+
+      it 'cleans up if a child dies during the reexec' do
+        # attempt to setup a scenario where a child exits in the
+        # interlude after old einhorn has execed the reexec-as
+        # command, but before the reexec-as command execs new einhorn
+
+        @dir = prepare_fixture_directory('exit_during_upgrade')
+        @server_program = File.join(@dir, "exiting_server.rb")
+        @socket_path = File.join(@dir, "einhorn.sock")
+
+        reexec_cmdline = File.join(@dir, 'upgrade_reexec.rb')
+
+        with_running_einhorn(%W{einhorn -m manual -b 127.0.0.1:#{@port} --reexec-as=#{reexec_cmdline} -d #{@socket_path} -- ruby #{@server_program}}) do |process|
+          wait_for_open_port
+
+          Process.kill('USR2', read_from_port.to_i)
+          einhornsh(%W{-d #{@socket_path} -e upgrade})
+
+          client = Einhorn::Client.for_path(@socket_path)
+          client.send_command('command' => 'state')
+          resp = client.receive_message
+
+          state = YAML.load(resp['message'])
+          assert_equal(1, state[:state][:children].count)
 
           process.terminate
         end
