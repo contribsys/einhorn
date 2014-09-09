@@ -90,7 +90,7 @@ module Helpers
       @fixtured_dirs ||= Set.new
       new_dir = Dir.mktmpdir(name)
       @fixtured_dirs << new_dir
-      FileUtils.cp_r(File.join(fixture_path(name), '.'), new_dir)
+      FileUtils.cp_r(File.join(fixture_path(name), '.'), new_dir, :preserve => true)
 
       new_dir
     end
