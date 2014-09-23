@@ -75,7 +75,7 @@ module Einhorn
     def self.deregister_writeable(writer)
       writers = @@writeable[writer.to_io]
       writers.delete(writer)
-      @@readable.delete(writer.to_io) if writers.length == 0
+      @@writeable.delete(writer.to_io) if writers.length == 0
     end
 
     def self.writeable_fds
