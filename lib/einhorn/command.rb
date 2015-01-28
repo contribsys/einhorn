@@ -448,29 +448,40 @@ module Einhorn
       Einhorn::Event.break_loop
     end
 
-    def self.replenish
+    def self.replenish(immediately=false)
       return unless Einhorn::State.respawn
 
-      if !Einhorn::State.last_spinup
+      if immediately
         replenish_immediately
       else
         replenish_gradually
       end
     end
 
+    # Immediately spinup all missing workers. The other replenish_* methods are
+    # favored over this one because it tends to cause a thundering herd.
     def self.replenish_immediately
       missing = Einhorn::WorkerPool.missing_worker_count
       if missing <= 0
         Einhorn.log_error("Missing is currently #{missing.inspect}, but should always be > 0 when replenish_immediately is called. This probably indicates a bug in Einhorn.")
         return
       end
-      Einhorn.log_info("Launching #{missing} new workers")
+      Einhorn.log_info("Launching #{missing} new workers", :upgrade)
       missing.times {spinup}
     end
 
     def self.replenish_gradually(max_unacked=nil)
       return if Einhorn::TransientState.has_outstanding_spinup_timer
       return unless Einhorn::WorkerPool.missing_worker_count > 0
+
+      # if this is the first worker, just spin up immediately
+      if !Einhorn::State.last_spinup
+        missing = Einhorn::WorkerPool.missing_worker_count
+        Einhorn.log_info("Will spin up #{missing} workers", :upgrade)
+        spinup
+
+        return _schedule_replenish
+      end
 
       # default to spinning up at most NCPU workers at once
       unless max_unacked
@@ -511,6 +522,10 @@ module Einhorn
         Einhorn.log_debug("Last spinup was #{seconds_ago}s ago, and spinup_interval is #{spinup_interval}s, so not spinning up a new process")
       end
 
+      _schedule_replenish
+    end
+
+    def self._schedule_replenish
       Einhorn::TransientState.has_outstanding_spinup_timer = true
       Einhorn::Event::Timer.open(spinup_interval) do
         Einhorn::TransientState.has_outstanding_spinup_timer = false
