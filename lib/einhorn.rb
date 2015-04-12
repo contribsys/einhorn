@@ -389,8 +389,12 @@ module Einhorn
 
     begin
       Einhorn::ConfigFile.check_config_file!
-    rescue => e
-      Einhorn.log_info("Looks like a broken config file: #{e}")
+    rescue Exception => e
+      # Ideally we'd catch something a bit less broad, but we'd need
+      # to know what YAML syntax errors to catch for each support Ruby
+      # version. This is a bit of a hammer, but seems like one that
+      # works.
+      Einhorn.log_info("Looks like a broken config file: #{e} (#{e.class})")
       return false
     end
 
