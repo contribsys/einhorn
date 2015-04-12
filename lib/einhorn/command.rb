@@ -92,6 +92,7 @@ module Einhorn
 
       spec[:acked] = true
       Einhorn.log_info("Up to #{Einhorn::WorkerPool.ack_count} / #{Einhorn::WorkerPool.ack_target} #{Einhorn::State.ack_mode[:type]} ACKs#{extra}")
+
       # Could call cull here directly instead, I believe.
       Einhorn::Event.break_loop
     end
@@ -307,7 +308,7 @@ module Einhorn
       ENV['EINHORN_SOCK_PATH'] = Einhorn::Command::Interface.socket_path
       if Einhorn::State.command_socket_as_fd
         socket = UNIXSocket.open(Einhorn::Command::Interface.socket_path)
-        Einhorn::TransientState.socket_handles << socket
+        Einhorn::FD.hold(socket)
         ENV['EINHORN_SOCK_FD'] = socket.fileno.to_s
       end
 

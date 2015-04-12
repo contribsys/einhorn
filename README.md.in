@@ -67,7 +67,9 @@ EventMachine-LE to support file-descriptor passing. Check out
 
 ## Compatibility
 
-Einhorn was developed and tested under Ruby 1.8.7.
+Einhorn is being developed on 2.1, but should be compatible back to
+1.8.7 (see the .travis.yml for the exact set of Rubies we test on). We
+plan to drop official support for 1.8.7 in the near future.
 
 ## About
 

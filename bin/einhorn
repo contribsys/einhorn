@@ -53,7 +53,7 @@ arguments:
 
 Each address is specified as an ip/port pair, possibly accompanied by options:
 
-    ADDR := (IP:PORT)[<,OPT>...]
+    ADDR := (IP:PORT)[<,FLAG>...]
 
 In the worker process, the opened file descriptors will be represented
 as file descriptor numbers in a series of environment variables named
@@ -68,7 +68,7 @@ in the EINHORN_FD_COUNT environment variable:
     EINHORN_FD_1="7" # 127.0.0.1:1235
     EINHORN_FD_COUNT="2"
 
-Valid opts are:
+Valid flags are:
 
     r, so_reuseaddr: set SO_REUSEADDR on the server socket
     n, o_nonblock: set O_NONBLOCK on the server socket
@@ -169,6 +169,50 @@ library.
 
 You can set the name that Einhorn and your workers show in PS. Just
 pass `-c <name>`.
+
+### Config file
+
+[new] Traditionally, Einhorn was configured entirely through
+command-line options. However, this meant the only interface to modify
+a running Einhorn's settings was via RPCs. Most relevantly, there was
+no way to specify that you'd like to change the set of ports bound by
+Einhorn.
+
+Einhorn now supports an optional YAML configuration file. Today, the
+configuration file only supports the `bind` option:
+
+```
+bind:
+  - addr: 127.0.0.1
+    port: 3000
+    flags: [r, n] # optional, uses the same flags as the command-line
+    fd: 7 # optional, specifies which file descriptor Einhorn will bind
+```
+
+Upon upgrade, the configuration file gets reloaded. Einhorn figures
+out what's changed, and will modify its file descriptor state to match
+the configuration file. This includes potentially renumbering file
+descriptors for a given addr/port.
+
+For example, if you change the sample configuration file to:
+
+```
+bind:
+  - addr: 127.0.0.1
+    port: 3001
+    flags: [r, n]
+    fd: 7
+  - addr: 127.0.0.1
+    port: 3000
+    flags: [r]
+    fd: 8
+```
+
+Einhorn will perform the following operations:
+
+- Renumber the existing 127.0.0.1:3000 (fd 7) to a temporary fd.
+- Bind 127.0.0.1:3001 at descriptor 7.
+- Renumber the existing 127.0.0.1:3000 (temporary fd) to 8.
 EOF
     end
 
@@ -197,8 +241,12 @@ if true # $0 == __FILE__
 
       host = $1
       port = Integer($2)
-      flags = $3.split(',').select {|flag| flag.length > 0}.map {|flag| flag.downcase}
+      flags = Einhorn::FD.parse_flags($3)
       Einhorn::State.bind << [host, port, flags]
+    end
+
+    opts.on('-C config', '--config config', 'The Einhorn config file to load') do |config_file|
+      Einhorn::State.config_file = config_file
     end
 
     opts.on('-c CMD_NAME', '--command-name CMD_NAME', 'Set the command name in ps to this value') do |cmd_name|

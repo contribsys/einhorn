@@ -78,6 +78,7 @@ module Einhorn
         :nice => {:master => nil, :worker => nil, :renice_cmd => '/usr/bin/renice'},
         :reexec_commandline => nil,
         :drop_environment_variables => [],
+        :config_file => nil,
       }
     end
 
@@ -99,8 +100,6 @@ module Einhorn
         :environ => {},
         :has_outstanding_spinup_timer => false,
         :stateful => nil,
-        # Holds references so that the GC doesn't go and close your sockets.
-        :socket_handles => Set.new
       }
     end
   end
@@ -154,6 +153,11 @@ module Einhorn
           dead.each {|pid| Einhorn::Command.mourn(pid)}
         end
       end
+
+      # Added the config file option in 0.6.4
+      if !updated_state.include?(:config_file)
+        updated_state[:config_file] = nil
+      end
     end
 
     default = store.default_state
@@ -191,27 +195,6 @@ module Einhorn
 
   def self.print_state
     log_info(Einhorn::State.state.pretty_inspect)
-  end
-
-  def self.bind(addr, port, flags)
-    log_info("Binding to #{addr}:#{port} with flags #{flags.inspect}")
-    sd = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
-    Einhorn::Compat.cloexec!(sd, false)
-
-    if flags.include?('r') || flags.include?('so_reuseaddr')
-      sd.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, 1)
-    end
-
-    sd.bind(Socket.pack_sockaddr_in(port, addr))
-    sd.listen(Einhorn::State.config[:backlog])
-
-    if flags.include?('n') || flags.include?('o_nonblock')
-      fl = sd.fcntl(Fcntl::F_GETFL)
-      sd.fcntl(Fcntl::F_SETFL, fl | Fcntl::O_NONBLOCK)
-    end
-
-    Einhorn::TransientState.socket_handles << sd
-    sd.fileno
   end
 
   # Implement these ourselves so it plays nicely with state persistence
@@ -367,7 +350,7 @@ module Einhorn
         opt = $1
         host = $2
         port = $3
-        flags = $4.split(',').select {|flag| flag.length > 0}.map {|flag| flag.downcase}
+        flags = Einhorn::FD.parse_flags($4)
         fd = (Einhorn::State.sockets[[host, port]] ||= bind(host, port, flags))
         "#{opt}#{fd}"
       else
@@ -393,7 +376,8 @@ module Einhorn
 
   # Returns true if a reload of the einhorn master via re-execing is
   # not likely to be completely unsafe (that is, the new process's
-  # environment won't prevent it from loading its code on exec).
+  # environment won't prevent it from loading its code on exec, and
+  # the config file seems sane).
   def self.can_safely_reload?
     upgrade_sentinel = fork do
       Einhorn::TransientState.whatami = :upgrade_sentinel
@@ -401,7 +385,20 @@ module Einhorn
       Einhorn::Compat.exec(*Einhorn.upgrade_commandline(['--upgrade-check']))
     end
     Process.wait(upgrade_sentinel)
-    $?.exitstatus.zero?
+    return false unless $?.exitstatus.zero?
+
+    begin
+      Einhorn::ConfigFile.check_config_file!
+    rescue Exception => e
+      # Ideally we'd catch something a bit less broad, but we'd need
+      # to know what YAML syntax errors to catch for each support Ruby
+      # version. This is a bit of a hammer, but seems like one that
+      # works.
+      Einhorn.log_info("Looks like a broken config file: #{e} (#{e.class})")
+      return false
+    end
+
+    return true
   end
 
   # Set up the environment for reloading the einhorn master:
@@ -450,6 +447,8 @@ module Einhorn
       socketify!(Einhorn::State.cmd)
     end
 
+    Einhorn::ConfigFile.apply_config_file!
+
     set_master_ps_name
     renice_self
     preload
@@ -479,8 +478,10 @@ end
 
 require 'einhorn/command'
 require 'einhorn/compat'
+require 'einhorn/config_file'
 require 'einhorn/client'
 require 'einhorn/event'
+require 'einhorn/fd'
 require 'einhorn/worker'
 require 'einhorn/worker_pool'
 require 'einhorn/version'

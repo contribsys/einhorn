@@ -4,23 +4,9 @@ module Einhorn
     # the descriptors.
     def self.pipe
       readable, writeable = IO.pipe
-      cloexec!(readable, false)
-      cloexec!(writeable, false)
+      Einhorn::FD.cloexec!(readable, false)
+      Einhorn::FD.cloexec!(writeable, false)
       [readable, writeable]
-    end
-
-    def self.cloexec!(fd, enable)
-      original = fd.fcntl(Fcntl::F_GETFD)
-      if enable
-        new = original | Fcntl::FD_CLOEXEC
-      else
-        new = original & (-Fcntl::FD_CLOEXEC-1)
-      end
-      fd.fcntl(Fcntl::F_SETFD, new)
-    end
-
-    def self.cloexec?(fd)
-      fd.fcntl(Fcntl::F_GETFD) & Fcntl::FD_CLOEXEC
     end
 
     # Opts are ignored in Ruby 1.8
@@ -35,13 +21,13 @@ module Einhorn
 
     def self.unixserver_new(path)
       server = UNIXServer.new(path)
-      cloexec!(server, false)
+      Einhorn::FD.cloexec!(server, false)
       server
     end
 
     def self.accept_nonblock(server)
       sock = server.accept_nonblock
-      cloexec!(sock, false)
+      Einhorn::FD.cloexec!(sock, false)
       sock
     end
 
