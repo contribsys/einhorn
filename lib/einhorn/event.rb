@@ -16,8 +16,8 @@ module Einhorn
       @@loopbreak_reader = LoopBreaker.open(readable)
       @@loopbreak_writer = writeable
 
-      Einhorn::Compat.cloexec!(readable, true)
-      Einhorn::Compat.cloexec!(writeable, true)
+      Einhorn::FD.cloexec!(readable, true)
+      Einhorn::FD.cloexec!(writeable, true)
     end
 
     def self.close_all
