@@ -123,6 +123,21 @@ module Einhorn
         end
       end
 
+      if Einhorn::State.signal_timeout
+        Einhorn::Event::Timer.open(Einhorn::State.signal_timeout) do
+          children.each do |child|
+            next unless spec = Einhorn::State.children[child]
+
+            Einhorn.log_info("Child #{child.inspect} is still active after #{Einhorn::State.signal_timeout}. Sending SIGKILL.")
+            begin
+              Process.kill('KILL', child)
+            rescue Errno::ESRCH
+            end
+            spec[:signaled].add('KILL')
+          end
+        end
+      end
+
       "Successfully sent #{signal}s to #{signaled.length} processes: #{signaled.inspect}"
     end
 
