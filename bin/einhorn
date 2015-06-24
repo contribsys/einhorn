@@ -309,6 +309,10 @@ if true # $0 == __FILE__
       exit 0
     end
 
+    opts.on('--signal-timeout=T', '-t', 'If children do not react to signals after T seconds, escalate to SIGKILL') do |t|
+      Einhorn::State.signal_timeout = Integer(t)
+    end
+
     opts.on('--version', 'Show version') do
       puts Einhorn::VERSION
       exit

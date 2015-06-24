@@ -78,6 +78,7 @@ module Einhorn
         :nice => {:master => nil, :worker => nil, :renice_cmd => '/usr/bin/renice'},
         :reexec_commandline => nil,
         :drop_environment_variables => [],
+        :signal_timeout => nil,
       }
     end
 
