@@ -7,18 +7,7 @@ require 'tmpdir'
 require 'yaml'
 require 'shellwords'
 
-require 'einhorn/third/little-plugger'
-
 module Einhorn
-  extend Third::LittlePlugger
-  module Plugins; end
-
-  def self.plugins_send(sym, *args)
-    plugins.values.each do |plugin|
-      plugin.send(sym, *args) if plugin.respond_to? sym
-    end
-  end
-
   module AbstractState
     def default_state; raise NotImplementedError.new('Override in extended modules'); end
     def state; @state ||= default_state; end
@@ -111,11 +100,9 @@ module Einhorn
     updated_state, message = update_state(Einhorn::State, "einhorn", parsed[:state])
     Einhorn::State.state = updated_state
     Einhorn::Event.restore_persistent_descriptors(parsed[:persistent_descriptors])
-    plugin_messages = update_plugin_states(parsed[:plugins])
     # Do this after setting state so verbosity is right
     Einhorn.log_info("Using loaded state: #{parsed.inspect}")
     Einhorn.log_info(message) if message
-    plugin_messages.each {|msg| Einhorn.log_info(msg)}
   end
 
   def self.update_state(store, store_name, old_state)
@@ -171,23 +158,6 @@ module Einhorn
 
     # Can't print yet, since state hasn't been set, so we pass along the message.
     [updated_state, message]
-  end
-
-  def self.update_plugin_states(states)
-    plugin_messages = []
-    (states || {}).each do |name, plugin_state|
-      plugin = Einhorn.plugins[name]
-      unless plugin && plugin.const_defined?(:State)
-        plugin_messages << "No state defined in this version of the #{name} " +
-          "plugin; dropping values for keys #{plugin_state.keys.inspect}"
-        next
-      end
-
-      updated_state, plugin_message = update_state(plugin::State, "plugin #{name}", plugin_state)
-      plugin_messages << plugin_message if plugin_message
-      plugin::State.state = updated_state
-    end
-    plugin_messages
   end
 
   def self.print_state
@@ -463,7 +433,6 @@ module Einhorn
 
     while Einhorn::State.respawn || Einhorn::State.children.size > 0
       log_debug("Entering event loop")
-      Einhorn.plugins_send(:event_loop)
 
       # All of these are non-blocking
       Einhorn::Command.reap
@@ -473,8 +442,6 @@ module Einhorn
       # Make sure to do this last, as it's blocking.
       Einhorn::Event.loop_once
     end
-
-    Einhorn.plugins_send(:exit)
   end
 end
 
