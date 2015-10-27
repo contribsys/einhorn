@@ -21,22 +21,14 @@ module Einhorn
     end
 
     def send_command(hash)
-      begin
-        @client.send_command(hash)
-        while response = @client.receive_message
-          if response.kind_of?(Hash)
-            yield response['message']
-            return unless response['wait']
-          else
-            puts "Invalid response type #{response.class}: #{response.inspect}"
-          end
+      @client.send_command(hash)
+      while response = @client.receive_message
+        if response.kind_of?(Hash)
+          yield response['message']
+          return unless response['wait']
+        else
+          puts "Invalid response type #{response.class}: #{response.inspect}"
         end
-      rescue Errno::EPIPE => e
-        emit("einhornsh: Error communicating with Einhorn: #{e} (#{e.class})")
-        emit("einhornsh: Attempting to reconnect...")
-        reconnect
-
-        retry
       end
     end
 
