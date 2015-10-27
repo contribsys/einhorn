@@ -305,7 +305,7 @@ EOF
     end
 
     command 'state', "Get a dump of Einhorn's current state" do
-      YAML.dump({state: Einhorn::State.dumpable_state})
+      YAML.dump({:state => Einhorn::State.dumpable_state})
     end
 
     command 'reload', 'Reload Einhorn' do |conn, request|
