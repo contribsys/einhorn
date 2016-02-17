@@ -335,9 +335,9 @@ EOF
       end
 
       count = args[0].to_i
-      if count < 1 || count > 100
-        # sancheck. 100 is kinda arbitrary.
-        next "Invalid count: '#{args[0]}'. Must be an integer in [1,100)."
+      if count < 1 || count > 1000
+        # sancheck. 1000 is kinda arbitrary.
+        next "Invalid count: '#{args[0]}'. Must be an integer in [1,1000)."
       end
 
       Einhorn::Command.set_workers(count)
