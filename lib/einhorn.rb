@@ -142,6 +142,15 @@ module Einhorn
           dead.each {|pid| Einhorn::Command.mourn(pid)}
         end
       end
+
+      updated_state[:bind].map! do |binding|
+        # bindings used to just be arrays of [host,port,flags]
+        if binding.is_a? Array
+          Bind::InetBind.new(*binding)
+        else
+          binding
+        end
+      end
     end
 
     default = store.default_state
@@ -164,19 +173,16 @@ module Einhorn
     log_info(Einhorn::State.state.pretty_inspect)
   end
 
-  def self.bind(addr, port, flags)
-    log_info("Binding to #{addr}:#{port} with flags #{flags.inspect}")
-    sd = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+  def self.bind(binding)
+    log_info("Binding to #{binding.address} with flags #{binding.flags.inspect}")
+
+    sd = binding.make_socket()
     Einhorn::Compat.cloexec!(sd, false)
 
-    if flags.include?('r') || flags.include?('so_reuseaddr')
-      sd.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, 1)
-    end
-
-    sd.bind(Socket.pack_sockaddr_in(port, addr))
+    binding.bind(sd)
     sd.listen(Einhorn::State.config[:backlog])
 
-    if flags.include?('n') || flags.include?('o_nonblock')
+    if binding.flags.include?('n') || binding.flags.include?('o_nonblock')
       fl = sd.fcntl(Fcntl::F_GETFL)
       sd.fcntl(Fcntl::F_SETFL, fl | Fcntl::O_NONBLOCK)
     end
@@ -323,8 +329,8 @@ module Einhorn
   end
 
   def self.socketify_env!
-    Einhorn::State.bind.each do |host, port, flags|
-      fd = bind(host, port, flags)
+    Einhorn::State.bind.each do |binding|
+      fd = bind(binding)
       Einhorn::State.bind_fds << fd
     end
   end
@@ -339,7 +345,8 @@ module Einhorn
         host = $2
         port = $3
         flags = $4.split(',').select {|flag| flag.length > 0}.map {|flag| flag.downcase}
-        fd = (Einhorn::State.sockets[[host, port]] ||= bind(host, port, flags))
+        binding = Bind::InetBind.new(host, port, flags)
+        fd = (Einhorn::State.sockets[[host, port]] ||= bind(binding))
         "#{opt}#{fd}"
       else
         arg
@@ -445,6 +452,7 @@ module Einhorn
   end
 end
 
+require 'einhorn/bind'
 require 'einhorn/command'
 require 'einhorn/compat'
 require 'einhorn/client'

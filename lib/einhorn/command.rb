@@ -323,6 +323,7 @@ module Einhorn
 
       ENV['EINHORN_FD_COUNT'] = Einhorn::State.bind_fds.length.to_s
       Einhorn::State.bind_fds.each_with_index {|fd, i| ENV["EINHORN_FD_#{i}"] = fd.to_s}
+      Einhorn::State.bind.each_with_index {|bind, i| ENV["EINHORN_FD_FAMILY_#{i}"] = bind.family}
 
       ENV['EINHORN_CHILD_INDEX'] = index.to_s
 
