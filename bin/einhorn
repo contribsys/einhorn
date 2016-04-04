@@ -53,7 +53,11 @@ arguments:
 
 Each address is specified as an ip/port pair, possibly accompanied by options:
 
-    ADDR := (IP:PORT)[<,OPT>...]
+    IP_ADDR := (IP:PORT)[<,OPT>...]
+
+or as a path to a UNIX domain socket, also possibly accompanied by options:
+
+    UNIX_ADDR := /path/to/socket[<,OPT>...]
 
 In the worker process, the opened file descriptors will be represented
 as file descriptor numbers in a series of environment variables named
@@ -181,6 +185,20 @@ EOF
   end
 end
 
+
+BIND_PATTERN = /\A
+  # we accept two types of socket address
+  (?:
+    # ip, host:port
+    (?:(?<host>[^:]+):(?<port>\d+)) |
+    # unix socket path
+    (?<path>[^,:]+)
+  )
+
+  # flags are optional, comma delimited, and come at the end
+  (?<flags>(?:,\w+)*)
+\Z/x
+
 # Would be nice if this could be loadable rather than always
 # executing, but when run under gem it's a bit hard to do so.
 if true # $0 == __FILE__
@@ -190,14 +208,19 @@ if true # $0 == __FILE__
 
   optparse = OptionParser.new do |opts|
     opts.on('-b ADDR', '--bind ADDR', 'Bind an address and add the corresponding FD via the environment') do |addr|
-      unless addr =~ /\A([^:]+):(\d+)((?:,\w+)*)\Z/
-        raise "Invalid value for #{addr.inspect}: bind address must be of the form address:port[,flags...]"
+      unless addr =~ BIND_PATTERN
+        raise "Invalid value for #{addr.inspect}: bind address must be of the form address:port[,flags...] or /path/to/unix/socket[,flags...]"
       end
 
-      host = $1
-      port = Integer($2)
-      flags = $3.split(',').select {|flag| flag.length > 0}.map {|flag| flag.downcase}
-      Einhorn::State.bind << [host, port, flags]
+      flags = $~["flags"].split(",").reject(&:empty?).map(&:downcase)
+
+      bind = if $~["path"]
+        Einhorn::Bind::UnixBind.new($~["path"], flags)
+      else
+        Einhorn::Bind::InetBind.new($~["host"], Integer($~["port"]), flags)
+      end
+
+      Einhorn::State.bind << bind
     end
 
     opts.on('-c CMD_NAME', '--command-name CMD_NAME', 'Set the command name in ps to this value') do |cmd_name|

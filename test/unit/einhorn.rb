@@ -10,7 +10,7 @@ class EinhornTest < EinhornTestCase
 
     it "correctly parses srv: arguments" do
       cmd = ['foo', 'srv:1.2.3.4:123,llama,test', 'bar']
-      Einhorn.expects(:bind).once.with('1.2.3.4', '123', ['llama', 'test']).returns(4)
+      Einhorn.expects(:bind).once.with(Einhorn::Bind::InetBind.new('1.2.3.4', '123', ['llama', 'test'])).returns(4)
 
       Einhorn.socketify!(cmd)
 
@@ -19,7 +19,7 @@ class EinhornTest < EinhornTestCase
 
     it "correctly parses --opt=srv: arguments" do
       cmd = ['foo', '--opt=srv:1.2.3.4:456', 'baz']
-      Einhorn.expects(:bind).once.with('1.2.3.4', '456', []).returns(5)
+      Einhorn.expects(:bind).once.with(Einhorn::Bind::InetBind.new('1.2.3.4', '456', [])).returns(5)
 
       Einhorn.socketify!(cmd)
 
@@ -28,7 +28,7 @@ class EinhornTest < EinhornTestCase
 
     it "uses the same fd number for the same server spec" do
       cmd = ['foo', '--opt=srv:1.2.3.4:8910', 'srv:1.2.3.4:8910']
-      Einhorn.expects(:bind).once.with('1.2.3.4', '8910', []).returns(10)
+      Einhorn.expects(:bind).once.with(Einhorn::Bind::InetBind.new('1.2.3.4', '8910', [])).returns(10)
 
       Einhorn.socketify!(cmd)
 
