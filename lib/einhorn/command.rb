@@ -478,6 +478,12 @@ module Einhorn
       missing.times {spinup}
     end
 
+    # Unbounded exponential backoff is not a thing: we run into problems if
+    # e.g., each of our hundred workers simultaneously fail to boot for the same
+    # ephemeral reason. Instead cap backoff by some reasonable maximum, so we
+    # don't wait until the heat death of the universe to spin up new capacity.
+    MAX_SPINUP_INTERVAL = 30.0
+
     def self.replenish_gradually(max_unacked=nil)
       return if Einhorn::TransientState.has_outstanding_spinup_timer
       return unless Einhorn::WorkerPool.missing_worker_count > 0
@@ -500,6 +506,7 @@ module Einhorn
       # Exponentially backoff automated spinup if we're just having
       # things die before ACKing
       spinup_interval = Einhorn::State.config[:seconds] * (1.5 ** Einhorn::State.consecutive_deaths_before_ack)
+      spinup_interval = [spinup_interval, MAX_SPINUP_INTERVAL].min
       seconds_ago = (Time.now - Einhorn::State.last_spinup).to_f
 
       if seconds_ago > spinup_interval
