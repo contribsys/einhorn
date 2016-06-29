@@ -249,10 +249,9 @@ EventMachine-LE to support file-descriptor passing. Check out
 
 ## Compatibility
 
-Einhorn was developed and tested under Ruby 1.8.7.
+Einhorn runs in Ruby 2.0, 2.1, and 2.2
 
 ## About
 
-Einhorn is a project of [Stripe](https://stripe.com), led by [Greg
-Brockman](https://twitter.com/thegdb). Feel free to get in touch at
+Einhorn is a project of [Stripe](https://stripe.com), led by [Carl Jackson](https://github.com/zenazn). Feel free to get in touch at
 info@stripe.com.
