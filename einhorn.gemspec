@@ -15,6 +15,7 @@ Gem::Specification.new do |gem|
   gem.name          = 'einhorn'
   gem.require_paths = ['lib']
 
+  gem.add_development_dependency 'rack', '~> 1.6'
   gem.add_development_dependency 'rake'
   gem.add_development_dependency 'pry'
   gem.add_development_dependency 'minitest', '< 5.0'

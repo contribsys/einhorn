@@ -364,6 +364,7 @@ module Einhorn
     end
 
     def self.prepare_child_process
+      Process.setpgrp
       Einhorn.renice_self
     end
 
