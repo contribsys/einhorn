@@ -123,10 +123,14 @@ module Einhorn
         end
       end
 
-      if Einhorn::State.signal_timeout
+      if Einhorn::State.signal_timeout && record
         Einhorn::Event::Timer.open(Einhorn::State.signal_timeout) do
           children.each do |child|
             next unless spec = Einhorn::State.children[child]
+            unless spec[:signaled].include?(signal)
+              Einhorn.log_info("No record for #{signal} sent to child #{child.inspect} after #{Einhorn::State.signal_timeout}. This probably indicates a PID rollover happened.", :upgrade)
+              next
+            end
 
             Einhorn.log_info("Child #{child.inspect} is still active after #{Einhorn::State.signal_timeout}. Sending SIGKILL.")
             begin
