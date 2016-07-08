@@ -57,13 +57,13 @@ module Einhorn::Event
     end
 
     def register!
-      log_info("client connected")
+      log_debug("client connected")
       Einhorn::Event.register_connection(self, @socket.fileno)
       super
     end
 
     def deregister!
-      log_info("client disconnected") if Einhorn::TransientState.whatami == :master
+      log_debug("client disconnected") if Einhorn::TransientState.whatami == :master
       Einhorn::Event.deregister_connection(@socket.fileno)
       super
     end
