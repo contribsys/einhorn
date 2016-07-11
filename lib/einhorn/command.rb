@@ -99,7 +99,7 @@ module Einhorn
     def self.signal_all(signal, children=nil, record=true)
       children ||= Einhorn::WorkerPool.workers
 
-      signaled = []
+      signaled = {}
       Einhorn.log_info("Sending #{signal} to #{children.inspect}", :upgrade)
 
       children.each do |child|
@@ -119,16 +119,23 @@ module Einhorn
           Process.kill(signal, child)
         rescue Errno::ESRCH
         else
-          signaled << child
+          signaled[child] = spec
         end
       end
 
-      if Einhorn::State.signal_timeout
+      if Einhorn::State.signal_timeout && record
         Einhorn::Event::Timer.open(Einhorn::State.signal_timeout) do
           children.each do |child|
-            next unless spec = Einhorn::State.children[child]
+            spec = Einhorn::State.children[child]
+            next unless spec # Process is already dead and removed by mourn
+            signaled_spec = signaled[child]
+            next unless signaled_spec # We got ESRCH when trying to signal
+            if spec[:spinup_time] != signaled_spec[:spinup_time]
+              Einhorn.log_info("Different spinup time recorded for #{child} after #{Einhorn::State.signal_timeout}s. This probably indicates a PID rollover.", :upgrade)
+              next
+            end
 
-            Einhorn.log_info("Child #{child.inspect} is still active after #{Einhorn::State.signal_timeout}. Sending SIGKILL.")
+            Einhorn.log_info("Child #{child.inspect} is still active after #{Einhorn::State.signal_timeout}s. Sending SIGKILL.")
             begin
               Process.kill('KILL', child)
             rescue Errno::ESRCH
@@ -138,7 +145,7 @@ module Einhorn
         end
       end
 
-      "Successfully sent #{signal}s to #{signaled.length} processes: #{signaled.inspect}"
+      "Successfully sent #{signal}s to #{signaled.length} processes: #{signaled.keys}"
     end
 
     def self.increment
@@ -291,14 +298,15 @@ module Einhorn
       end
 
       Einhorn.log_info("===> Launched #{pid} (index: #{index})", :upgrade)
+      Einhorn::State.last_spinup = Time.now
       Einhorn::State.children[pid] = {
         :type => :worker,
         :version => Einhorn::State.version,
         :acked => false,
         :signaled => Set.new,
-        :index => index
+        :index => index,
+        :spinup_time => Einhorn::State.last_spinup,
       }
-      Einhorn::State.last_spinup = Time.now
 
       # Set up whatever's needed for ACKing
       ack_mode = Einhorn::State.ack_mode
