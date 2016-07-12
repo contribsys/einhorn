@@ -70,12 +70,6 @@ module Einhorn
         :signal_timeout => nil,
       }
     end
-
-    def self.dumpable_state
-      dump = state
-      dump[:reloading_for_preload_upgrade] = dump[:reloading_for_upgrade]
-      dump
-    end
   end
 
   module TransientState
@@ -111,13 +105,6 @@ module Einhorn
 
     # Handle changes in state format updates from previous einhorn versions
     if store == Einhorn::State
-      # TODO: Drop this backwards compatibility hack when we hit 0.7
-      if updated_state.include?(:reloading_for_preload_upgrade) &&
-          !updated_state.include?(:reloading_for_upgrade)
-        updated_state[:reloading_for_upgrade] = updated_state.delete(:reloading_for_preload_upgrade)
-        message << "upgraded :reloading_for_preload_upgrade to :reloading_for_upgrade"
-      end
-
       if updated_state[:children]
         # For a period, we created children entries for state_passers,
         # but we don't want that (in particular, it probably died
