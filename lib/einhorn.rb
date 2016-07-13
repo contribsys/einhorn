@@ -104,30 +104,23 @@ module Einhorn
     updated_state = old_state.dup
 
     # Handle changes in state format updates from previous einhorn versions
-    if store == Einhorn::State
-      if updated_state[:children]
-        # For a period, we created children entries for state_passers,
-        # but we don't want that (in particular, it probably died
-        # before we could setup our SIGCHLD handler
-        updated_state[:children].delete_if {|k, v| v[:type] == :state_passer}
-
-        # Depending on what is passed for --reexec-as, it's possible
-        # that the process received a SIGCHLD while something other
-        # than einhorn was the active executable. If that happened,
-        # einhorn might not know about a dead child, so let's check
-        # them all
-        dead = []
-        updated_state[:children].each do |pid, v|
-          begin
-            pid = Process.wait(pid, Process::WNOHANG)
-            dead << pid if pid
-          rescue Errno::ECHILD
-            dead << pid
-          end
+    if store == Einhorn::State && updated_state[:children]
+      # Depending on what is passed for --reexec-as, it's possible
+      # that the process received a SIGCHLD while something other
+      # than einhorn was the active executable. If that happened,
+      # einhorn might not know about a dead child, so let's check
+      # them all
+      dead = []
+      updated_state[:children].each do |pid, v|
+        begin
+          pid = Process.wait(pid, Process::WNOHANG)
+          dead << pid if pid
+        rescue Errno::ECHILD
+          dead << pid
         end
-        Einhorn::Event::Timer.open(0) do
-          dead.each {|pid| Einhorn::Command.mourn(pid)}
-        end
+      end
+      Einhorn::Event::Timer.open(0) do
+        dead.each {|pid| Einhorn::Command.mourn(pid)}
       end
     end
 
