@@ -40,28 +40,28 @@ module Helpers
           begin
             stdout, stderr = process.communicate
           rescue Errno::ECHILD
-            # It's dead, and we're not getting anything. This is
-            # peaceful.
+            # It's dead, and we're not getting anything. This is peaceful.
           end
         end
         yield(process) if block_given?
-      rescue Exception => e
+      rescue
         unless (status = process.poll) && status.exited?
           process.terminate
         end
         raise
       ensure
         unless (status = process.poll) && status.exited?
-          begin
-            Timeout.timeout(10) do  # (Argh, I'm so sorry)
-              status = process.wait
+          for i in 1..10 do
+            status = process.poll
+            if status && status.exited?
+              break
             end
-          rescue Timeout::Error
+            sleep(1)
+          end
+          unless status && status.exited?
             $stderr.puts "Could not get Einhorn to quit within 10 seconds, killing it forcefully..."
             process.send_signal("KILL")
             status = process.wait
-          rescue Errno::ECHILD
-            # Process is dead!
           end
         end
         communicator.join
