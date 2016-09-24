@@ -217,6 +217,7 @@ pass `-c <name>`.
                                      Unix nice level at which to run the einhorn processes. If not running as root, make sure to ulimit -e as appopriate.
         --with-state-fd STATE        [Internal option] With file descriptor containing state
         --upgrade-check              [Internal option] Check if Einhorn can exec itself and exit with status 0 before loading code
+    -t, --signal-timeout=T           If children do not react to signals after T seconds, escalate to SIGKILL
         --version                    Show version
 
 
