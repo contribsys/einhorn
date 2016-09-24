@@ -252,6 +252,25 @@ EventMachine-LE to support file-descriptor passing. Check out
 
 Einhorn runs in Ruby 2.0, 2.1, and 2.2
 
+The following libraries ease integration with Einhorn with languages other than
+Ruby:
+
+- **[go-einhorn](https://github.com/stripe/go-einhorn)**: Stripe's own library
+  for *talking* to an einhorn master (doesn't wrap socket code).
+- **[goji](https://github.com/zenazn/goji/)**: Go (golang) server framework. The
+  [`bind`](https://godoc.org/github.com/zenazn/goji/bind) and
+  [`graceful`](https://godoc.org/github.com/zenazn/goji/graceful)
+  packages provide helpers and HTTP/TCP connection wrappers for Einhorn
+  integration.
+- **[github.com/CHH/einhorn](https://github.com/CHH/einhorn)**: PHP library
+- **[thin-attach\_socket](https://github.com/ConradIrwin/thin-attach_socket)**:
+  run `thin` behind Einhorn
+- **[baseplate](https://reddit.github.io/baseplate/cli/serve.html)**: a
+  collection of Python helpers and libraries, with support for running behind
+  Einhorn
+
+*NB: this list should not imply any official endorsement or vetting!*
+
 ## About
 
 Einhorn is a project of [Stripe](https://stripe.com), led by [Carl Jackson](https://github.com/zenazn). Feel free to get in touch at
