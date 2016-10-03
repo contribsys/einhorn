@@ -217,6 +217,7 @@ pass `-c <name>`.
                                      Unix nice level at which to run the einhorn processes. If not running as root, make sure to ulimit -e as appopriate.
         --with-state-fd STATE        [Internal option] With file descriptor containing state
         --upgrade-check              [Internal option] Check if Einhorn can exec itself and exit with status 0 before loading code
+    -t, --signal-timeout=T           If children do not react to signals after T seconds, escalate to SIGKILL
         --version                    Show version
 
 
@@ -250,6 +251,25 @@ EventMachine-LE to support file-descriptor passing. Check out
 ## Compatibility
 
 Einhorn runs in Ruby 2.0, 2.1, and 2.2
+
+The following libraries ease integration with Einhorn with languages other than
+Ruby:
+
+- **[go-einhorn](https://github.com/stripe/go-einhorn)**: Stripe's own library
+  for *talking* to an einhorn master (doesn't wrap socket code).
+- **[goji](https://github.com/zenazn/goji/)**: Go (golang) server framework. The
+  [`bind`](https://godoc.org/github.com/zenazn/goji/bind) and
+  [`graceful`](https://godoc.org/github.com/zenazn/goji/graceful)
+  packages provide helpers and HTTP/TCP connection wrappers for Einhorn
+  integration.
+- **[github.com/CHH/einhorn](https://github.com/CHH/einhorn)**: PHP library
+- **[thin-attach\_socket](https://github.com/ConradIrwin/thin-attach_socket)**:
+  run `thin` behind Einhorn
+- **[baseplate](https://reddit.github.io/baseplate/cli/serve.html)**: a
+  collection of Python helpers and libraries, with support for running behind
+  Einhorn
+
+*NB: this list should not imply any official endorsement or vetting!*
 
 ## About
 
