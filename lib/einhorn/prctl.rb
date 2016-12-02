@@ -1,0 +1,26 @@
+module Einhorn
+  class PrctlAbstract
+    def self.get_pdeathsig
+      raise NotImplementedError
+    end
+
+    def self.set_pdeathsig(signal)
+      raise NotImplementedError
+    end
+  end
+
+  class PrctlUnimplemented < PrctlAbstract
+    # Deliberately empty; NotImplementedError is intended
+  end
+
+  Prctl = PrctlUnimplemented
+
+  if RUBY_PLATFORM =~ /linux/ then
+    begin
+      require 'einhorn/prctl_linux'
+      Prctl = PrctlLinux
+    rescue LoadError
+      # Do nothing
+    end
+  end
+end
