@@ -23,7 +23,5 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency 'chalk-rake'
   gem.add_development_dependency 'subprocess'
 
-  gem.add_runtime_dependency 'ffi'
-
   gem.version       = Einhorn::VERSION
 end

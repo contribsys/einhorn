@@ -280,7 +280,7 @@ module Einhorn
 
           reseed_random
 
-          setup_parent_watch expected_ppid, :will_exec => false
+          setup_parent_watch(expected_ppid)
 
           prepare_child_environment(index)
           einhorn_main
@@ -291,6 +291,7 @@ module Einhorn
           prepare_child_process
 
           Einhorn.log_info("About to exec #{cmd.inspect}")
+          Einhorn::Command::Interface.uninit
           # Here's the only case where cloexec would help. Since we
           # have to track and manually close FDs for other cases, we
           # may as well just reuse close_all rather than also set
@@ -299,7 +300,7 @@ module Einhorn
           # Note that Ruby 1.9's close_others option is useful here.
           Einhorn::Event.close_all_for_worker
 
-          setup_parent_watch expected_ppid, :will_exec => true
+          setup_parent_watch(expected_ppid)
 
           prepare_child_environment(index)
           Einhorn::Compat.exec(cmd[0], cmd[1..-1], :close_others => false)
@@ -385,48 +386,18 @@ module Einhorn
       Einhorn.renice_self
     end
 
-    def self.setup_parent_watch(expected_ppid, options={})
+    def self.setup_parent_watch(expected_ppid)
       if Einhorn::State.kill_children_on_exit then
-        if options.fetch(:will_exec, false) then
-          # This allows einhorn workers to properly handle parent death that
-          # occurs after the parent check below, but before the exec syscall.
-          #
-          # The signal handler will be reset to the default (ignore) on exec.
-          #
-          # There is still a one-ruby-instruction race condition window during
-          # the handling of exec, see below.
-          Signal.trap("USR2") do
-            Einhorn.log_error("Parent process died before exec")
-            exit(1)
-          end
-        end
-
         begin
+          # NB: Having the USR2 signal handler set to terminate (the default) at
+          # this point is required. If it's set to a ruby handler, there are
+          # race conditions that could cause the worker to leak.
+
           Einhorn::Prctl.set_pdeathsig("USR2")
           if Process.ppid != expected_ppid then
             Einhorn.log_error("Parent process died before we set pdeathsig; cowardly refusing to exec child process.")
             exit(1)
           end
-
-          # NB: There is an unfixable race condition at the exec. If our parent
-          # dies and we receive the USR2 signal, then ruby will enqueue the
-          # signal to be handled after the VM instruction that is currently
-          # running. If we get unlucky and this VM instruction happens to be the
-          # one that does the exec syscall, we've permanently lost the fact that
-          # we should have died.
-          #
-          # This is unfixable given that the graceful shutdown
-          # signal is USR2; if it were a signal whose default behavior was to
-          # kill the process, like HUP, then we could tell the kernel to reset
-          # our handler for HUP to the default (meaning it would not go to ruby
-          # at all, the kernel would handle it as a SIGKILL), then it
-          # wouldn't matter whether we were in the exec ruby VM instruction or
-          # not, since ruby would not be responsible for handling the signal.
-          #
-          # Setting the handler for USR2 to kill the process would fix this, but
-          # would also leak an unexpected signal handler into the worker process
-          # in the normal case, which is unacceptable.
-
         rescue NotImplementedError
           # Unsupported OS; silently continue.
         end

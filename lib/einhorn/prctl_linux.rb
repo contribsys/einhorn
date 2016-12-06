@@ -1,22 +1,29 @@
-require 'ffi'
+require 'fiddle'
+require 'fiddle/import'
 
 module Einhorn
+  module PrctlRaw
+    extend Fiddle::Importer
+    dlload Fiddle.dlopen(nil) # libc
+    extern 'int prctl(int, unsigned long, unsigned long, unsigned long, unsigned long)'
+
+    # From linux/prctl.h
+    SET_PDEATHSIG = 1
+    GET_PDEATHSIG = 2
+  end
+
   class PrctlLinux < PrctlAbstract
-    extend FFI::Library
-    ffi_lib FFI::Library::LIBC
-    enum :option, [
-      :set_pdeathsig, 1,
-      :get_pdeathsig, 2,
-    ]
-    attach_function :prctl, [ :option, :ulong, :ulong, :ulong, :ulong ], :int
+    # Reading integers is hard with fiddle. :(
+    IntStruct = Fiddle::CStructBuilder.create(Fiddle::CStruct, [Fiddle::TYPE_INT], ['i'])
 
     def self.get_pdeathsig
-      out = FFI::MemoryPointer.new(:int, 1)
-      if prctl(:get_pdeathsig, out.address, 0, 0, 0) != 0 then
-        raise SystemCallError.new("get_pdeathsig", FFI.errno)
+      out = IntStruct.malloc
+      out.i = 0
+      if PrctlRaw.prctl(PrctlRaw::GET_PDEATHSIG, out.to_i, 0, 0, 0) != 0 then
+        raise SystemCallError.new("get_pdeathsig", Fiddle.last_error)
       end
 
-      signo = out.get_int(0)
+      signo = out.i
       if signo == 0 then
         return nil
       end
@@ -34,8 +41,8 @@ module Einhorn
         signo = signal
       end
 
-      if prctl(:set_pdeathsig, signo, 0, 0, 0) != 0 then
-        raise SystemCallError.new("set_pdeathsig(#{signal})", FFI.errno)
+      if PrctlRaw.prctl(PrctlRaw::SET_PDEATHSIG, signo, 0, 0, 0) != 0 then
+        raise SystemCallError.new("set_pdeathsig(#{signal})", Fiddle.last_error)
       end
     end
   end
