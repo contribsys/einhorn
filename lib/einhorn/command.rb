@@ -3,6 +3,7 @@ require 'set'
 require 'tmpdir'
 
 require 'einhorn/command/interface'
+require 'einhorn/prctl'
 
 module Einhorn
   module Command
@@ -266,6 +267,7 @@ module Einhorn
     def self.spinup(cmd=nil)
       cmd ||= Einhorn::State.cmd
       index = next_index
+      expected_ppid = Process.pid
       if Einhorn::TransientState.preloaded
         pid = fork do
           Einhorn::TransientState.whatami = :worker
@@ -278,6 +280,8 @@ module Einhorn
 
           reseed_random
 
+          setup_parent_watch(expected_ppid)
+
           prepare_child_environment(index)
           einhorn_main
         end
@@ -287,6 +291,7 @@ module Einhorn
           prepare_child_process
 
           Einhorn.log_info("About to exec #{cmd.inspect}")
+          Einhorn::Command::Interface.uninit
           # Here's the only case where cloexec would help. Since we
           # have to track and manually close FDs for other cases, we
           # may as well just reuse close_all rather than also set
@@ -294,6 +299,8 @@ module Einhorn
           #
           # Note that Ruby 1.9's close_others option is useful here.
           Einhorn::Event.close_all_for_worker
+
+          setup_parent_watch(expected_ppid)
 
           prepare_child_environment(index)
           Einhorn::Compat.exec(cmd[0], cmd[1..-1], :close_others => false)
@@ -377,6 +384,24 @@ module Einhorn
     def self.prepare_child_process
       Process.setpgrp
       Einhorn.renice_self
+    end
+
+    def self.setup_parent_watch(expected_ppid)
+      if Einhorn::State.kill_children_on_exit then
+        begin
+          # NB: Having the USR2 signal handler set to terminate (the default) at
+          # this point is required. If it's set to a ruby handler, there are
+          # race conditions that could cause the worker to leak.
+
+          Einhorn::Prctl.set_pdeathsig("USR2")
+          if Process.ppid != expected_ppid then
+            Einhorn.log_error("Parent process died before we set pdeathsig; cowardly refusing to exec child process.")
+            exit(1)
+          end
+        rescue NotImplementedError
+          # Unsupported OS; silently continue.
+        end
+      end
     end
 
     # @param options [Hash]
