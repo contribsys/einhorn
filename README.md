@@ -54,7 +54,7 @@ To set Einhorn up as a master process running 3 copies of `sleep 5`:
 
     $ einhorn -n 3 sleep 5
 
-You can communicate your running Einhorn process via `einhornsh`:
+You can communicate with your running Einhorn process via `einhornsh`:
 
     $ einhornsh
     Welcome gdb! You are speaking to Einhorn Master Process 11902
