@@ -1,10 +1,5 @@
 language: ruby
 rvm:
-  - 2.0.0
-  - 2.1
-  - 2.2
-
-# This is to work around the version of bundler installed in Travis and
-# https://github.com/bundler/bundler/issues/3558
-before_install:
-  - gem update bundler
+  - 2.3.0
+  - 2.4
+  - 2.5
