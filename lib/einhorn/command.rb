@@ -101,8 +101,8 @@ module Einhorn
 
     def self.signal_all(signal, children=nil, record=true)
       children ||= Einhorn::WorkerPool.workers
-
       signaled = {}
+
       Einhorn.log_info("Sending #{signal} to #{children.inspect}", :upgrade)
 
       children.each do |child|
@@ -116,11 +116,13 @@ module Einhorn
             Einhorn.log_error("Re-sending #{signal} to already-signaled child #{child.inspect}. It may be slow to spin down, or it may be swallowing #{signal}s.", :upgrade)
           end
           spec[:signaled].add(signal)
+          spec[:last_signaled_at] = Time.now
         end
 
         begin
           Process.kill(signal, child)
         rescue Errno::ESRCH
+              Einhorn.log_debug("Attempted to #{signal} child #{child.inspect} but the process does not exist", :upgrade)
         else
           signaled[child] = spec
         end
@@ -128,22 +130,22 @@ module Einhorn
 
       if Einhorn::State.signal_timeout && record
         Einhorn::Event::Timer.open(Einhorn::State.signal_timeout) do
-          children.each do |child|
-            spec = Einhorn::State.children[child]
-            next unless spec # Process is already dead and removed by mourn
-            signaled_spec = signaled[child]
-            next unless signaled_spec # We got ESRCH when trying to signal
-            if spec[:spinup_time] != signaled_spec[:spinup_time]
-              Einhorn.log_info("Different spinup time recorded for #{child} after #{Einhorn::State.signal_timeout}s. This probably indicates a PID rollover.", :upgrade)
-              next
+          Einhorn::State.children.select{|_, c| c[:signaled].length > 0}.each do |pid, child|
+            next unless child[:last_signaled_at]
+
+            now = Time.now
+            expires_at = child[:last_signaled_at] + Einhorn::State.signal_timeout
+            next unless now >= expires_at
+
+            Einhorn.log_info("Child #{pid.inspect} was signaled #{child[:last_signaled_at] - now}s ago. Sending SIGKILL as it is still active after #{Einhorn::State.signal_timeout}s timeout.", :upgrade)
+            begin
+              Process.kill('KILL', pid)
+            rescue Errno::ESRCH
+              Einhorn.log_debug("Attempted to SIGKILL child #{pid.inspect} but the process does not exist.")
             end
 
-            Einhorn.log_info("Child #{child.inspect} is still active after #{Einhorn::State.signal_timeout}s. Sending SIGKILL.")
-            begin
-              Process.kill('KILL', child)
-            rescue Errno::ESRCH
-            end
-            spec[:signaled].add('KILL')
+            child[:signaled].add('KILL')
+            child[:last_signaled_at] = Time.now
           end
         end
       end
@@ -314,6 +316,7 @@ module Einhorn
         :version => Einhorn::State.version,
         :acked => false,
         :signaled => Set.new,
+        :last_signaled_at => nil,
         :index => index,
         :spinup_time => Einhorn::State.last_spinup,
       }

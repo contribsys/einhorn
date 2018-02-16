@@ -106,6 +106,11 @@ module Helpers
       open_port.close
     end
 
+    def get_state(client)
+      client.send_command('command' => 'state')
+      YAML.load(client.receive_message['message'])[:state]
+    end
+
     def wait_for_open_port
       max_retries = 50
       begin
