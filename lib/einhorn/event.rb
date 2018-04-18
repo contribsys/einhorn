@@ -4,6 +4,7 @@ module Einhorn
   module Event
     @@loopbreak_reader = nil
     @@loopbreak_writer = nil
+    @@default_timeout = nil
     @@signal_actions = []
     @@readable = {}
     @@writeable = {}
@@ -120,7 +121,7 @@ module Einhorn
       if expires_at = @@timers.keys.sort[0]
         expires_at - Time.now
       else
-        nil
+        @@default_timeout
       end
     end
 
@@ -164,6 +165,14 @@ module Einhorn
       rescue Errno::EWOULDBLOCK, Errno::EAGAIN
         Einhorn.log_error("Loop break pipe is full -- probably means that we are quite backlogged")
       end
+    end
+
+    def self.default_timeout=(val)
+      @@default_timeout = val.to_i == 0 ? nil : val.to_i
+    end
+
+    def self.default_timeout
+      @@default_timeout
     end
   end
 end

@@ -166,8 +166,8 @@ class UpgradeTests < EinhornIntegrationTestCase
     after { cleanup_fixtured_directories }
 
     it 'issues a SIGKILL to outdated children when signal-timeout has passed' do
-      signal_timeout = 3
-      sleep_for = 5
+      signal_timeout = 2
+      sleep_for = 10
       cmd = %W{
         einhorn
         -b 127.0.0.1:#{@port}
@@ -186,7 +186,7 @@ class UpgradeTests < EinhornIntegrationTestCase
         signaled_children = state[:children].select{|_,c| c[:signaled].length > 0}
         assert_equal(1, signaled_children.length)
 
-        sleep(signal_timeout + 1)
+        sleep(signal_timeout * 2)
 
         state = get_state(client)
         assert_equal(1, state[:children].count)
