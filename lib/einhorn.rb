@@ -414,6 +414,14 @@ module Einhorn
       Einhorn::State.reloading_for_upgrade = false
     end
 
+    # If setting a signal-timeout, timeout the event loop
+    # in the same timeframe, ensuring processes are culled
+    # on a regular basis.
+    if Einhorn::State.signal_timeout
+      Einhorn::Event.default_timeout = Einhorn::Event.default_timeout.nil? ?
+        Einhorn::State.signal_timeout : [Einhorn::State.signal_timeout, Einhorn::Event.default_timeout].min
+    end
+
     while Einhorn::State.respawn || Einhorn::State.children.size > 0
       log_debug("Entering event loop")
 

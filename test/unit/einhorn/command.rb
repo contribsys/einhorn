@@ -18,4 +18,36 @@ class CommandTest < EinhornTestCase
       Command.quieter
     end
   end
+
+  describe "resignal_timeout" do
+    it "does not kill any children" do
+      Einhorn::State.stubs(signal_timeout: 5 * 60)
+      Einhorn::State.stubs(children: {
+        12345 => {last_signaled_at: nil},
+        12346 => {signaled: Set.new(["USR1"]), last_signaled_at: Time.now - (2 * 60)},
+      })
+
+      Process.expects(:kill).never
+      Einhorn::Command.kill_expired_signaled_workers
+
+      refute(Einhorn::State.children[12346][:signaled].include?("KILL"), "Process was KILLed when it shouldn't have been")
+    end
+
+    it "KILLs stuck child processes" do
+      Time.stub :now, Time.at(0) do
+        Process.stub(:kill, true) do
+          Einhorn::State.stubs(signal_timeout: 60)
+          Einhorn::State.stubs(children: {
+            12346 => {signaled: Set.new(["USR2"]), last_signaled_at: Time.now - (2 * 60)},
+          })
+
+          Einhorn::Command.kill_expired_signaled_workers
+
+          child = Einhorn::State.children[12346]
+          assert(child[:signaled].include?("KILL"), "Process was not KILLed as expected")
+          assert(child[:last_signaled_at] == Time.now, "The last_processed_at was not updated as expected")
+        end
+      end
+    end
+  end
 end
