@@ -563,6 +563,8 @@ module Einhorn
       return if Einhorn::TransientState.has_outstanding_spinup_timer
       return unless Einhorn::WorkerPool.missing_worker_count > 0
 
+      max_unacked ||= Einhorn::State.config[:max_unacked]
+
       # default to spinning up at most NCPU workers at once
       unless max_unacked
         begin
