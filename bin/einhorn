@@ -310,6 +310,10 @@ if true # $0 == __FILE__
       Einhorn::State.signal_timeout = Integer(t)
     end
 
+    opts.on('--max-unacked=N', 'Maximum number of workers that can be unacked when gracefully upgrading.') do |n|
+      Einhorn::State.config[:max_unacked] = Integer(n)
+    end
+
     opts.on('--version', 'Show version') do
       puts Einhorn::VERSION
       exit
