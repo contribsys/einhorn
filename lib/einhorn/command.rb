@@ -585,37 +585,21 @@ module Einhorn
       spinup_interval = Einhorn::State.config[:seconds] * (1.5 ** Einhorn::State.consecutive_deaths_before_ack)
       spinup_interval = [spinup_interval, MAX_SPINUP_INTERVAL].min
       seconds_ago = (Time.now - Einhorn::State.last_spinup).to_f
-
+      
       if seconds_ago > spinup_interval
-        unacked = Einhorn::WorkerPool.unacked_unsignaled_modern_workers.length
-        if unacked >= max_unacked
-          Einhorn.log_info("There are #{unacked} unacked new workers, and max_unacked is #{max_unacked}, so not spinning up a new process")
-        else
-          trigger_spinup = true
+        if trigger_spinup?(max_unacked)
+          msg = "Last spinup was #{seconds_ago}s ago, and spinup_interval is #{spinup_interval}s, so spinning up a new process."
 
-          if Einhorn::State.config[:max_additional_while_upgrading]
-            capacity_exceeded = (Einhorn::State.config[:number] + Einhorn::State.config[:max_additional_while_upgrading]) - Einhorn::WorkerPool.workers_with_state.length
-            if capacity_exceeded < 0
-              Einhorn.log_info("Over worker capacity by #{capacity_exceeded.abs} during upgrade, #{Einhorn::WorkerPool.modern_workers.length} new workers of #{Einhorn::WorkerPool.workers_with_state.length} total. Waiting for old workers to exit before spinning up a process")
-
-              trigger_spinup = false
-            end
+          if Einhorn::State.consecutive_deaths_before_ack > 0
+            Einhorn.log_info("#{msg} (there have been #{Einhorn::State.consecutive_deaths_before_ack} consecutive unacked worker deaths)", :upgrade)
+          else
+            Einhorn.log_debug(msg)
           end
 
-          if trigger_spinup
-            msg = "Last spinup was #{seconds_ago}s ago, and spinup_interval is #{spinup_interval}s, so spinning up a new process"
-
-            if Einhorn::State.consecutive_deaths_before_ack > 0
-              Einhorn.log_info("#{msg} (there have been #{Einhorn::State.consecutive_deaths_before_ack} consecutive unacked worker deaths)", :upgrade)
-            else
-              Einhorn.log_debug(msg)
-            end
-
-            spinup
-          end
+          spinup
         end
       else
-        Einhorn.log_debug("Last spinup was #{seconds_ago}s ago, and spinup_interval is #{spinup_interval}s, so not spinning up a new process")
+        Einhorn.log_debug("Last spinup was #{seconds_ago}s ago, and spinup_interval is #{spinup_interval}s, so not spinning up a new process.")
       end
 
       Einhorn::TransientState.has_outstanding_spinup_timer = true
@@ -637,6 +621,23 @@ module Einhorn
       output = "Verbosity set to #{Einhorn::State.verbosity}"
       Einhorn.log_info(output) if log
       output
+    end
+
+    def self.trigger_spinup?(max_unacked)
+      unacked = Einhorn::WorkerPool.unacked_unsignaled_modern_workers.length
+      if unacked >= max_unacked
+        Einhorn.log_info("There are #{unacked} unacked new workers, and max_unacked is #{max_unacked}, so not spinning up a new process.")
+        return false
+      elsif Einhorn::State.config[:max_upgrade_additional]
+        capacity_exceeded = (Einhorn::State.config[:number] + Einhorn::State.config[:max_upgrade_additional]) - Einhorn::WorkerPool.workers_with_state.length
+        if capacity_exceeded < 0
+          Einhorn.log_info("Over worker capacity by #{capacity_exceeded.abs} during upgrade, #{Einhorn::WorkerPool.modern_workers.length} new workers of #{Einhorn::WorkerPool.workers_with_state.length} total. Waiting for old workers to exit before spinning up a process.")
+
+          return false
+        end
+      end
+
+      true
     end
   end
 end
