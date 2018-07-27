@@ -589,17 +589,30 @@ module Einhorn
       if seconds_ago > spinup_interval
         unacked = Einhorn::WorkerPool.unacked_unsignaled_modern_workers.length
         if unacked >= max_unacked
-          Einhorn.log_debug("There are #{unacked} unacked new workers, and max_unacked is #{max_unacked}, so not spinning up a new process")
+          Einhorn.log_info("There are #{unacked} unacked new workers, and max_unacked is #{max_unacked}, so not spinning up a new process")
         else
-          msg = "Last spinup was #{seconds_ago}s ago, and spinup_interval is #{spinup_interval}s, so spinning up a new process"
+          trigger_spinup = true
 
-          if Einhorn::State.consecutive_deaths_before_ack > 0
-            Einhorn.log_info("#{msg} (there have been #{Einhorn::State.consecutive_deaths_before_ack} consecutive unacked worker deaths)", :upgrade)
-          else
-            Einhorn.log_debug(msg)
+          if Einhorn::State.config[:max_while_upgrading]
+            capacity_exceeded = Einhorn::State.config[:max_while_upgrading] - Einhorn::WorkerPool.workers_with_state.length
+            if capacity_exceeded < 0
+              Einhorn.log_info("Over worker capacity by #{capacity_exceeded.abs} during upgrade, #{Einhorn::WorkerPool.modern_workers.length} new workers of #{Einhorn::WorkerPool.workers_with_state.length} total. Waiting for old workers to exit before spinning up a process")
+
+              trigger_spinup = false
+            end
           end
 
-          spinup
+          if trigger_spinup
+            msg = "Last spinup was #{seconds_ago}s ago, and spinup_interval is #{spinup_interval}s, so spinning up a new process"
+
+            if Einhorn::State.consecutive_deaths_before_ack > 0
+              Einhorn.log_info("#{msg} (there have been #{Einhorn::State.consecutive_deaths_before_ack} consecutive unacked worker deaths)", :upgrade)
+            else
+              Einhorn.log_debug(msg)
+            end
+
+            spinup
+          end
         end
       else
         Einhorn.log_debug("Last spinup was #{seconds_ago}s ago, and spinup_interval is #{spinup_interval}s, so not spinning up a new process")
