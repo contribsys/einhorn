@@ -314,6 +314,10 @@ if true # $0 == __FILE__
       Einhorn::State.config[:max_unacked] = Integer(n)
     end
 
+    opts.on('--max-upgrade-additional=N', 'Maximum number of additional workers that can be running during an upgrade.') do |n|
+      Einhorn::State.config[:max_upgrade_additional] = Integer(n)
+    end
+
     opts.on('--version', 'Show version') do
       puts Einhorn::VERSION
       exit

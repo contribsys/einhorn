@@ -50,4 +50,33 @@ class CommandTest < EinhornTestCase
       end
     end
   end
+
+  describe "trigger_spinup?" do
+    it "is true by default" do
+      assert(Einhorn::Command.trigger_spinup?(1))
+    end
+
+    it "is false if unacked >= max_unacked" do
+      Einhorn::State.stubs(children: {12346 => {type: :worker, acked: false, signaled: Set.new}})
+      assert(Einhorn::Command.trigger_spinup?(1))
+    end
+
+    it "is false if capacity is exceeded" do
+      Einhorn::State.stubs(config: {max_upgrade_additional: 1, number: 1})
+      Einhorn::State.stubs(
+        children: {
+          1 => {type: :worker, acked: true, signaled: Set.new},
+          2 => {type: :worker, acked: true, signaled: Set.new},
+          3 => {type: :worker, acked: true, signaled: Set.new},
+        }
+      )
+      refute(Einhorn::Command.trigger_spinup?(1))
+    end
+
+    it "is true if under capacity" do
+      Einhorn::State.stubs(config: {max_upgrade_additional: 2, number: 1})
+      Einhorn::State.stubs(children: {1 => {type: :worker, acked: true, signaled: Set.new}})
+      assert(Einhorn::Command.trigger_spinup?(1))
+    end
+  end
 end
