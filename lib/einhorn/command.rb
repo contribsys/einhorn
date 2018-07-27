@@ -593,8 +593,8 @@ module Einhorn
         else
           trigger_spinup = true
 
-          if Einhorn::State.config[:max_while_upgrading]
-            capacity_exceeded = Einhorn::State.config[:max_while_upgrading] - Einhorn::WorkerPool.workers_with_state.length
+          if Einhorn::State.config[:max_additional_while_upgrading]
+            capacity_exceeded = (Einhorn::State.config[:number] + Einhorn::State.config[:max_additional_while_upgrading]) - Einhorn::WorkerPool.workers_with_state.length
             if capacity_exceeded < 0
               Einhorn.log_info("Over worker capacity by #{capacity_exceeded.abs} during upgrade, #{Einhorn::WorkerPool.modern_workers.length} new workers of #{Einhorn::WorkerPool.workers_with_state.length} total. Waiting for old workers to exit before spinning up a process")
 

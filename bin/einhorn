@@ -314,8 +314,8 @@ if true # $0 == __FILE__
       Einhorn::State.config[:max_unacked] = Integer(n)
     end
 
-    opts.on('--max-while-upgrading=N', 'Maximum number of old and new workers that can be running during an upgrade.') do |n|
-      Einhorn::State.config[:max_while_upgrading] = Integer(n)
+    opts.on('--max-additional-while-upgrading=N', 'Maximum number of additional workers that can be running during an upgrade.') do |n|
+      Einhorn::State.config[:max_additional_while_upgrading] = Integer(n)
     end
 
     opts.on('--version', 'Show version') do
