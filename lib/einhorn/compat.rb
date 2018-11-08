@@ -25,6 +25,10 @@ module Einhorn
 
     # Opts are ignored in Ruby 1.8
     def self.exec(script, args, opts={})
+      if start_pwd = ENV["SYMLINK"]
+        opts[:chdir] ||= start_pwd
+      end
+
       cmd = [script, script]
       begin
         Kernel.exec(cmd, *(args + [opts]))
