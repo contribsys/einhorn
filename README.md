@@ -194,6 +194,17 @@ library.
 You can set the name that Einhorn and your workers show in PS. Just
 pass `-c <name>`.
 
+### Re exec
+
+You can use the `--reexec-as` option to replace the `einhorn` command with a command or script of your own. This might be useful for those with a Capistrano like deploy process that has changing symlinks. To ensure that you are following the symlinks you could use a bash script like this.
+
+    #!/bin/bash
+
+    cd <symlinked directory>
+    exec /usr/local/bin/einhorn "$@"
+
+Then you could set `--reexec-as=` to the name of your bash script and it will run in place of the plain einhorn command.
+
 ### Options
 
     -b, --bind ADDR                  Bind an address and add the corresponding FD via the environment
