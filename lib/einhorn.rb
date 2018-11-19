@@ -236,6 +236,8 @@ module Einhorn
         else
           log_info("Requiring #{path} (if this hangs, make sure your code can be properly loaded as a library)", :upgrade)
           require path
+
+          force_move_to_oldgen if Einhorn::State.config[:gc_before_fork]
         end
       rescue Exception => e
         log_info("Proceeding with postload -- could not load #{path}: #{e} (#{e.class})\n  #{e.backtrace.join("\n  ")}", :upgrade)
@@ -249,6 +251,20 @@ module Einhorn
       end
     end
   end
+
+  # Make the GC more copy-on-write friendly by forcibly incrementing the generation
+  # counter on all objects to its maximum value. Learn more at: https://github.com/ko1/nakayoshi_fork
+  def self.force_move_to_oldgen
+    log_info("Starting GC to improve copy-on-write memory sharing", :upgrade)
+
+    GC.start
+    3.times do
+      GC.start(full_mark: false)
+    end
+
+    log_info("Finished GC after preloading", :upgrade)
+  end
+  private_class_method :force_move_to_oldgen
 
   def self.set_argv(cmd, set_ps_name)
     # TODO: clean up this hack

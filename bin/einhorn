@@ -318,6 +318,10 @@ if true # $0 == __FILE__
       Einhorn::State.config[:max_upgrade_additional] = Integer(n)
     end
 
+    opts.on('--gc-before-fork', 'Run the GC three times before forking to improve memory sharing for copy-on-write.') do
+      Einhorn::State.config[:gc_before_fork] = true
+    end
+
     opts.on('--version', 'Show version') do
       puts Einhorn::VERSION
       exit
