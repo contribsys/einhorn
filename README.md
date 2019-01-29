@@ -234,8 +234,14 @@ Then you could set `--reexec-as=` to the name of your bash script and it will ru
 
 ## Contributing
 
+### Development Status
+
+Einhorn is still in active operation at Stripe, but we are not maintaining
+Einhorn actively. PRs are very welcome, and we will review and merge,
+but we are unlikely to triage and fix reported issues without code.
+
 Contributions are definitely welcome. To contribute, just follow the
-usual workflow:
+sual workflow:
 
 1. Fork Einhorn
 2. Create your feature branch (`git checkout -b my-new-feature`)
