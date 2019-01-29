@@ -241,7 +241,7 @@ Einhorn actively. PRs are very welcome, and we will review and merge,
 but we are unlikely to triage and fix reported issues without code.
 
 Contributions are definitely welcome. To contribute, just follow the
-sual workflow:
+usual workflow:
 
 1. Fork Einhorn
 2. Create your feature branch (`git checkout -b my-new-feature`)
