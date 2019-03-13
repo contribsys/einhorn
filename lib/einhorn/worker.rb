@@ -147,9 +147,9 @@ module Einhorn
 
         fd = Integer(fd_str)
         client = Einhorn::Client.for_fd(fd)
-        close_after_use = false if arg
+        close_after_use = false if contextual_arg
       when :direct
-        socket = arg
+        socket = contextual_arg
         client = Einhorn::Client.for_path(socket)
       else
         raise "Unrecognized socket discovery mechanism: #{discovery.inspect}. Must be one of :filesystem, :argv, or :direct"
