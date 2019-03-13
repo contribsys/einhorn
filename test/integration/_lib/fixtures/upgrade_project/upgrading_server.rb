@@ -9,6 +9,8 @@ def einhorn_main
   $stderr.puts "Worker has a socket"
   Einhorn::Worker.ack!
   $stderr.puts "Worker sent ack to einhorn"
+  Einhorn::Worker.ping!("id-1")
+  $stderr.puts "Worker has sent a ping to einhorn"
   while true
     s, addrinfo = serv.accept
     $stderr.puts "Worker got a socket!"

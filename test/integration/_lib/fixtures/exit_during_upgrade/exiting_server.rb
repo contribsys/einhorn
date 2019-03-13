@@ -5,6 +5,7 @@ require 'einhorn/worker'
 def einhorn_main
   serv = Socket.for_fd(Einhorn::Worker.socket!)
   Einhorn::Worker.ack!
+  Einhorn::Worker.ping!("id-1")
 
   Signal.trap('USR2') do
     sleep 3

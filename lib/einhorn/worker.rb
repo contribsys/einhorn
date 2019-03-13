@@ -66,33 +66,28 @@ module Einhorn
     # be useful for anything. Maybe if it's always fd 3, because then
     # the user wouldn't have to provide an arg.
     def self.ack!(discovery=:env, arg=nil)
-      ensure_worker!
-      close_after_use = true
-
-      case discovery
-      when :env
-        socket = ENV['EINHORN_SOCK_PATH']
-        client = Einhorn::Client.for_path(socket)
-      when :fd
-        raise "No EINHORN_SOCK_FD provided in environment. Did you run einhorn with the -g flag?" unless fd_str = ENV['EINHORN_SOCK_FD']
-
-        fd = Integer(fd_str)
-        client = Einhorn::Client.for_fd(fd)
-        close_after_use = false if arg
-      when :direct
-        socket = arg
-        client = Einhorn::Client.for_path(socket)
-      else
-        raise "Unrecognized socket discovery mechanism: #{discovery.inspect}. Must be one of :filesystem, :argv, or :direct"
+      handle_command_socket(discovery, arg) do |client|
+        client.send_command('command' => 'worker:ack', 'pid' => $$)
       end
+    end
 
-      client.send_command({
-          'command' => 'worker:ack',
-          'pid' => $$
-        })
-
-      client.close if close_after_use
-      true
+    # Call this to indicate your child process is up and in a healthy state.
+    # Arguments:
+    #
+    # @request_id: Identifies the request ID of the worker, can be used to debug wedged workers.
+    #
+    # @discovery: How to discover the master process's command socket.
+    #   :env:        Discover the path from ENV['EINHORN_SOCK_PATH']
+    #   :fd:         Just use the file descriptor in ENV['EINHORN_SOCK_FD'].
+    #                Must run the master with the -g flag. This is mostly
+    #                useful if you don't have a nice library like Einhorn::Worker.
+    #                Then @arg being true causes the FD to be left open after ACK;
+    #                otherwise it is closed.
+    #   :direct:     Provide the path to the command socket in @arg.
+    def self.ping!(request_id, discovery=:env, arg=nil)
+      handle_command_socket(discovery, arg) do |client|
+        client.send_command('command' => 'worker:ping', 'pid' => $$, 'request_id' => request_id)
+      end
     end
 
     def self.socket(number=nil)
@@ -138,6 +133,33 @@ module Einhorn
     end
 
     private
+
+    def self.handle_command_socket(discovery, contextual_arg)
+      ensure_worker!
+      close_after_use = true
+
+      case discovery
+      when :env
+        socket = ENV['EINHORN_SOCK_PATH']
+        client = Einhorn::Client.for_path(socket)
+      when :fd
+        raise "No EINHORN_SOCK_FD provided in environment. Did you run einhorn with the -g flag?" unless fd_str = ENV['EINHORN_SOCK_FD']
+
+        fd = Integer(fd_str)
+        client = Einhorn::Client.for_fd(fd)
+        close_after_use = false if contextual_arg
+      when :direct
+        socket = contextual_arg
+        client = Einhorn::Client.for_path(socket)
+      else
+        raise "Unrecognized socket discovery mechanism: #{discovery.inspect}. Must be one of :filesystem, :argv, or :direct"
+      end
+
+      yield client
+      client.close if close_after_use
+
+      true
+    end
 
     def self.socket_from_filesystem(cmd_name)
       ppid = Process.ppid
