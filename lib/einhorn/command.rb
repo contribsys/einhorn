@@ -47,6 +47,16 @@ module Einhorn
       end
     end
 
+    def self.register_ping(pid, request_id)
+      unless spec = Einhorn::State.children[pid]
+        Einhorn.log_error("Could not find state for PID #{pid.inspect}; ignoring ACK.")
+        return
+      end
+
+      spec[:pinged_at] = Time.now
+      spec[:pinged_request_id] = request_id
+    end
+
     def self.register_manual_ack(pid)
       ack_mode = Einhorn::State.ack_mode
       unless ack_mode[:type] == :manual

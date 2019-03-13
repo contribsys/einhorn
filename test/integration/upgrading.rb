@@ -78,6 +78,10 @@ class UpgradeTests < EinhornIntegrationTestCase
           state = YAML.load(resp['message'])
           assert_equal(1, state[:state][:children].count)
 
+          child = state[:state][:children].first.last
+          assert_in_delta(child[:pinged_at], Time.now, 60)
+          assert_equal("id-1", child[:pinged_request_id])
+
           process.terminate
         end
       end

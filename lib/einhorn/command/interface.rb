@@ -289,6 +289,17 @@ EOF
       nil
     end
 
+    command 'worker:ping' do |conn, request|
+      if pid = request['pid']
+        Einhorn::Command.register_ping(pid, request['request_id'])
+      else
+        conn.log_error("Invalid request (no pid): #{request.inspect}")
+      end
+      # Throw away this connection in case the application forgets to
+      conn.close
+      nil
+    end
+
     # Used by einhornsh
     command 'ehlo' do |conn, request|
       <<EOF
