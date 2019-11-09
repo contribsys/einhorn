@@ -1,6 +1,7 @@
 require File.expand_path(File.join(File.dirname(__FILE__), '../_lib'))
 
 require 'einhorn'
+require 'tmpdir'
 
 class EinhornTest < EinhornTestCase
   describe "when sockifying" do
@@ -53,6 +54,25 @@ class EinhornTest < EinhornTestCase
       updated_state, message = Einhorn.update_state(Einhorn::State, 'einhorn', old_state)
       assert_equal({:baz => 14, :foo => 1234}, updated_state)
       assert(message.nil?)
+    end
+  end
+
+  describe '.bind' do
+    it 'properly touches files in the port dir' do
+      port_dir = Dir.mktmpdir
+      Einhorn::State.config[:port_dir] = port_dir
+      begin
+        Einhorn.bind('127.0.0.1', 0, '')
+
+        # ensure the file is in that dir
+        Einhorn::TransientState.socket_handles.each do |s|
+          port = s.local_address.ip_port
+          expected_file = File.join(port_dir, port.to_s)
+          assert(File.file?(expected_file))
+        end
+      ensure
+        FileUtils.remove_entry port_dir
+      end
     end
   end
 end

@@ -1,4 +1,5 @@
 require 'fcntl'
+require 'fileutils'
 require 'optparse'
 require 'pp'
 require 'set'
@@ -154,6 +155,11 @@ module Einhorn
     end
 
     sd.bind(Socket.pack_sockaddr_in(port, addr))
+    if Einhorn::State.config[:port_dir]
+      port = sd.local_address.ip_port
+      port_file_path = File.join(Einhorn::State.config[:port_dir], port.to_s)
+      FileUtils.touch(port_file_path)
+    end
     sd.listen(Einhorn::State.config[:backlog])
 
     if flags.include?('n') || flags.include?('o_nonblock')

@@ -226,6 +226,10 @@ if true # $0 == __FILE__
       exit(1)
     end
 
+    opts.on('-j', '--port_dir PORTDIR', 'Touch files in this directory with ports that have been bound to') do |d|
+      Einhorn::State.config[:port_dir] = d
+    end
+
     opts.on('-k', '--kill-children-on-exit', 'If Einhorn exits unexpectedly, gracefully kill all its children') do
       Einhorn::State.kill_children_on_exit = true
     end
