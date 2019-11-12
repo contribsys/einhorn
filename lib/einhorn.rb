@@ -414,7 +414,6 @@ module Einhorn
       end
       Einhorn::Command::Interface.persistent_init
 
-
       Einhorn::State.orig_cmd = ARGV.dup
       Einhorn::State.cmd = ARGV.dup
       # TODO: don't actually alter ARGV[0]?
