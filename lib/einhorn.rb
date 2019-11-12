@@ -340,8 +340,8 @@ module Einhorn
         host = $2
         port = $3
         flags = $4.split(',').select {|flag| flag.length > 0}.map {|flag| flag.downcase}
-        bound_fd, = bind(host, port, flags)
-        fd = (Einhorn::State.sockets[[host, port]] ||= bound_fd)
+        Einhorn::State.sockets[[host, port]] ||= bind(host, port, flags)[0]
+        fd = Einhorn::State.sockets[[host, port]]
         "#{opt}#{fd}"
       else
         arg
