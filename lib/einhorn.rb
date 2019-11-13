@@ -45,6 +45,7 @@ module Einhorn
         :orig_cmd => nil,
         :bind => [],
         :bind_fds => [],
+        :bound_ports => [],
         :cmd => nil,
         :script_name => nil,
         :respawn => true,
@@ -162,7 +163,7 @@ module Einhorn
     end
 
     Einhorn::TransientState.socket_handles << sd
-    sd.fileno
+    [sd.fileno, sd.local_address.ip_port]
   end
 
   # Implement these ourselves so it plays nicely with state persistence
@@ -323,8 +324,9 @@ module Einhorn
 
   def self.socketify_env!
     Einhorn::State.bind.each do |host, port, flags|
-      fd = bind(host, port, flags)
+      fd, actual_port = bind(host, port, flags)
       Einhorn::State.bind_fds << fd
+      Einhorn::State.bound_ports << actual_port
     end
   end
 
@@ -338,7 +340,8 @@ module Einhorn
         host = $2
         port = $3
         flags = $4.split(',').select {|flag| flag.length > 0}.map {|flag| flag.downcase}
-        fd = (Einhorn::State.sockets[[host, port]] ||= bind(host, port, flags))
+        Einhorn::State.sockets[[host, port]] ||= bind(host, port, flags)[0]
+        fd = Einhorn::State.sockets[[host, port]]
         "#{opt}#{fd}"
       else
         arg
