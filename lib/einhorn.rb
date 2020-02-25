@@ -263,6 +263,8 @@ module Einhorn
       GC.start(full_mark: false)
     end
 
+    GC.compact if GC.respond_to?(:compact)
+
     log_info("Finished GC after preloading", :upgrade)
   end
   private_class_method :force_move_to_oldgen
