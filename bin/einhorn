@@ -267,7 +267,10 @@ if true # $0 == __FILE__
     end
 
     opts.on('-s', '--seconds N', 'Number of seconds to wait until respawning') do |b|
-      Einhorn::State.config[:seconds] = s.to_f
+      seconds = Float(s)
+      raise ArgumentError, 'seconds must be > 0' if seconds.zero?
+
+      Einhorn::State.config[:seconds] = seconds
     end
 
     opts.on('-v', '--verbose', 'Make output verbose (can be reconfigured on the fly)') do
