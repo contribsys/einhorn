@@ -266,7 +266,7 @@ if true # $0 == __FILE__
       Einhorn::Command.quieter(false)
     end
 
-    opts.on('-s', '--seconds N', 'Number of seconds to wait until respawning') do |b|
+    opts.on('-s', '--seconds N', 'Number of seconds to wait until respawning') do |s|
       seconds = Float(s)
       raise ArgumentError, 'seconds must be > 0' if seconds.zero?
 
