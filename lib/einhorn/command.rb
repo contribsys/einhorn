@@ -595,7 +595,7 @@ module Einhorn
       spinup_interval = Einhorn::State.config[:seconds] * (1.5 ** Einhorn::State.consecutive_deaths_before_ack)
       spinup_interval = [spinup_interval, MAX_SPINUP_INTERVAL].min
       seconds_ago = (Time.now - Einhorn::State.last_spinup).to_f
-      
+
       if seconds_ago > spinup_interval
         if trigger_spinup?(max_unacked)
           msg = "Last spinup was #{seconds_ago}s ago, and spinup_interval is #{spinup_interval}s, so spinning up a new process."

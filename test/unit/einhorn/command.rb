@@ -79,4 +79,57 @@ class CommandTest < EinhornTestCase
       assert(Einhorn::Command.trigger_spinup?(1))
     end
   end
+
+  describe "replenish_gradually" do
+    it "does nothing if an outstanding spinup timer exists" do
+      Einhorn::TransientState.stubs(has_outstanding_spinup_timer: true)
+      Einhorn::Command.expects(:spinup).never
+      Einhorn::Command.replenish_gradually
+    end
+    it "does nothing if the worker pool is full" do
+      Einhorn::TransientState.stubs(has_outstanding_spinup_timer: false)
+      Einhorn::WorkerPool.stubs(missing_worker_count: 0)
+      Einhorn::Command.expects(:spinup).never
+      Einhorn::Command.replenish_gradually
+    end
+
+    it "does nothing if we have not reached the spinup interval" do
+      Einhorn::TransientState.stubs(has_outstanding_spinup_timer: false)
+      Einhorn::WorkerPool.stubs(missing_worker_count: 1)
+      Einhorn::State.stubs(last_spinup: Time.now)
+      Einhorn::Command.expects(:spinup).never
+      Einhorn::Command.replenish_gradually
+    end
+
+    it "calls trigger_spinup? if we have reached the spinup interval" do
+      Einhorn::TransientState.stubs(has_outstanding_spinup_timer: false)
+      Einhorn::State.stubs(config: {seconds: 1, max_unacked: 2, number: 1})
+      Einhorn::WorkerPool.stubs(missing_worker_count: 1)
+      Einhorn::State.stubs(last_spinup: Time.now - 2) # 2 seconds ago
+      Einhorn::Command.expects(:trigger_spinup?).with(2).returns(false)
+      Einhorn::Command.replenish_gradually
+    end
+
+    it "can handle sub-second spinup intervals" do
+      Einhorn::TransientState.stubs(has_outstanding_spinup_timer: false)
+      Einhorn::State.stubs(config: {seconds: 0.1, max_unacked: 2, number: 1})
+      Einhorn::WorkerPool.stubs(missing_worker_count: 1)
+      Einhorn::State.stubs(last_spinup: Time.now - 0.5) # Half a second ago
+      Einhorn::Command.stubs(trigger_spinup?: true)
+      Einhorn::Command.expects(:spinup)
+      Einhorn::Command.replenish_gradually
+    end
+
+    it "registers a timer to run again at spinup interval" do
+      Einhorn::TransientState.stubs(has_outstanding_spinup_timer: false)
+      Einhorn::State.stubs(config: {seconds: 0.1, max_unacked: 2, number: 1})
+      Einhorn::WorkerPool.stubs(missing_worker_count: 1)
+      Einhorn::State.stubs(last_spinup: Time.now - 1)
+      Einhorn::Command.stubs(trigger_spinup?: true)
+      Einhorn::Command.stubs(:spinup)
+      Einhorn::TransientState.expects(:has_outstanding_spinup_timer=).with(true)
+      Einhorn::Event::Timer.expects(:open).with(0.1)
+      Einhorn::Command.replenish_gradually
+    end
+  end
 end
