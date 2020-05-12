@@ -69,6 +69,7 @@ module Einhorn
         :reexec_commandline => nil,
         :drop_environment_variables => [],
         :signal_timeout => nil,
+        :preloaded => false
       }
     end
   end
@@ -78,7 +79,6 @@ module Einhorn
     def self.default_state
       {
         :whatami => :master,
-        :preloaded => false,
         :script_name => nil,
         :argv => [],
         :environ => {},
@@ -230,6 +230,8 @@ module Einhorn
       set_argv(Einhorn::State.cmd, false)
 
       begin
+        # Reset preloaded state to false - this allows us to monitor for failed preloads during reloads.
+        Einhorn::State.preloaded = false
         # If it's not going to be requireable, then load it.
         if !path.end_with?('.rb') && File.exists?(path)
           log_info("Loading #{path} (if this hangs, make sure your code can be properly loaded as a library)", :upgrade)
@@ -245,7 +247,7 @@ module Einhorn
       else
         if defined?(einhorn_main)
           log_info("Successfully loaded #{path}", :upgrade)
-          Einhorn::TransientState.preloaded = true
+          Einhorn::State.preloaded = true
         else
           log_info("Proceeding with postload -- loaded #{path}, but no einhorn_main method was defined", :upgrade)
         end

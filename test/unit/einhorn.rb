@@ -55,4 +55,41 @@ class EinhornTest < EinhornTestCase
       assert(message.nil?)
     end
   end
+
+  describe ".preload" do
+    it "updates preload on success" do
+      puts __dir__
+      Einhorn.stubs(:set_argv).returns
+      # preloads the sleep worker since it has einhorn main
+      Einhorn::State.path = "#{__dir__}/sleep_worker.rb"
+      assert_equal(false, Einhorn::State.preloaded)
+      Einhorn::preload
+      assert_equal(true, Einhorn::State.preloaded)
+      # Attempt another preload
+      Einhorn::preload
+      assert_equal(true, Einhorn::State.preloaded)
+    end
+
+    it "updates preload to failed with previous success" do
+      puts __dir__
+      Einhorn.stubs(:set_argv).returns
+      # preloads the sleep worker since it has einhorn main
+      Einhorn::State.path = "#{__dir__}/sleep_worker.rb"
+      assert_equal(false, Einhorn::State.preloaded)
+      Einhorn::preload
+      assert_equal(true, Einhorn::State.preloaded)
+      # Change path to bad worker and preload again, should be false
+      Einhorn::State.path = "#{__dir__}/bad_worker.rb"
+      Einhorn::preload
+      assert_equal(false, Einhorn::State.preloaded)
+    end
+
+    it "preload is false after failing" do
+      Einhorn.stubs(:set_argv).returns
+      Einhorn::State.path = "#{__dir__}/bad_worker.rb"
+      assert_equal(false, Einhorn::State.preloaded)
+      Einhorn::preload
+      assert_equal(false, Einhorn::State.preloaded)
+    end
+  end
 end
