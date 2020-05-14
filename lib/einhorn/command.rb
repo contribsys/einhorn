@@ -280,7 +280,7 @@ module Einhorn
       cmd ||= Einhorn::State.cmd
       index = next_index
       expected_ppid = Process.pid
-      if Einhorn::TransientState.preloaded
+      if Einhorn::State.preloaded
         pid = fork do
           Einhorn::TransientState.whatami = :worker
           prepare_child_process
