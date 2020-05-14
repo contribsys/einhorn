@@ -57,6 +57,10 @@ class EinhornTest < EinhornTestCase
   end
 
   describe ".preload" do
+    before do
+      Einhorn::State.preloaded = false
+    end
+
     it "updates preload on success" do
       Einhorn.stubs(:set_argv).returns
       # preloads the sleep worker since it has einhorn main
