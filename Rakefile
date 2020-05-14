@@ -22,6 +22,6 @@ Rake::TestTask.new do |t|
   # t.warning = true
   t.verbose = true
   t.test_files = FileList['test/**/*.rb'].reject do |file|
-    file.end_with?('_lib.rb') || file.include?('/_lib/')
+    file.end_with?('_lib.rb') || file.include?('/_lib/') || file.include?("bad_worker.rb")
   end
 end

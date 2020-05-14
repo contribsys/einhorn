@@ -244,12 +244,14 @@ module Einhorn
         end
       rescue Exception => e
         log_info("Proceeding with postload -- could not load #{path}: #{e} (#{e.class})\n  #{e.backtrace.join("\n  ")}", :upgrade)
+        puts "failed to preload"
       else
         if defined?(einhorn_main)
           log_info("Successfully loaded #{path}", :upgrade)
           Einhorn::State.preloaded = true
         else
           log_info("Proceeding with postload -- loaded #{path}, but no einhorn_main method was defined", :upgrade)
+          puts "no main!"
         end
       end
     end
