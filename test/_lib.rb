@@ -1,3 +1,5 @@
+require 'appmap/minitest'
+
 require 'rubygems'
 require 'bundler/setup'
 
