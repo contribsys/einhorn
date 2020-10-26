@@ -121,7 +121,7 @@ module Einhorn
         end
       end
       Einhorn::Event::Timer.open(0) do
-        dead.each {|pid| Einhorn::Command.mourn(pid)}
+        dead.each {|pid| Einhorn::Command.cleanup(pid)}
       end
     end
 
