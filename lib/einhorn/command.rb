@@ -13,15 +13,14 @@ module Einhorn
           Einhorn.log_debug('Going to reap a child process')
           pid = Process.wait(-1, Process::WNOHANG)
           return unless pid
-          mourn(pid)
+          cleanup(pid)
           Einhorn::Event.break_loop
         end
       rescue Errno::ECHILD
       end
     end
 
-    # Mourn the death of your child
-    def self.mourn(pid)
+    def self.cleanup(pid)
       unless spec = Einhorn::State.children[pid]
         Einhorn.log_error("Could not find any config for exited child #{pid.inspect}! This probably indicates a bug in Einhorn.")
         return
@@ -141,7 +140,7 @@ module Einhorn
         Einhorn::Event::Timer.open(Einhorn::State.signal_timeout) do
           children.each do |child|
             spec = Einhorn::State.children[child]
-            next unless spec # Process is already dead and removed by mourn
+            next unless spec # Process is already dead and removed by cleanup
             signaled_spec = signaled[child]
             next unless signaled_spec # We got ESRCH when trying to signal
             if spec[:spinup_time] != signaled_spec[:spinup_time]
