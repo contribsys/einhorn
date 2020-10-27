@@ -1,5 +1,4 @@
 require 'set'
-require 'uri'
 require 'yaml'
 
 module Einhorn
@@ -22,12 +21,12 @@ module Einhorn
 
       def self.serialize_message(message)
         serialized = YAML.dump(message)
-        escaped = URI.escape(serialized, "%\n")
+        escaped = serialized.gsub(/%|\n/, '%' => '%25', "\n" => '%0A')
         escaped + "\n"
       end
 
       def self.deserialize_message(line)
-        serialized = URI.unescape(line)
+        serialized = line.gsub(/%(25|0A)/, '%25' => '%', '%0A' => "\n")
         YAML.load(serialized)
       end
     end
