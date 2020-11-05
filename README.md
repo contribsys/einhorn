@@ -199,6 +199,8 @@ pass `-c <name>`.
 You can use the `--reexec-as` option to replace the `einhorn` command with a command or script of your own. This might be useful for those with a Capistrano like deploy process that has changing symlinks. To ensure that you are following the symlinks you could use a bash script like this.
 
     #!/bin/bash
+    
+    set -e # exit when one of the commands returns a non zero exit code
 
     cd <symlinked directory>
     exec /usr/local/bin/einhorn "$@"
