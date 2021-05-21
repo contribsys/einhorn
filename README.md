@@ -1,3 +1,5 @@
+>  This project is deprecated and is no longer being actively maintained.
+
 # Einhorn: the language-independent shared socket manager
 
 ![Einhorn](https://stripe.com/img/blog/posts/meet-einhorn/einhorn.png)
