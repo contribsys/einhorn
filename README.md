@@ -1,7 +1,7 @@
 
 # Einhorn: the language-independent shared socket manager
 
-![Einhorn](https://stripe.com/img/blog/posts/meet-einhorn/einhorn.png)
+![Einhorn](https://user-images.githubusercontent.com/923242/175769739-5b81bfc0-c60c-4045-bc1c-5f78d624b8fb.png)
 
 Let's say you have a server process which processes one request at a
 time. Your site is becoming increasingly popular, and this one process
