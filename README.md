@@ -1,6 +1,3 @@
-> <img src="https://stripe.dev/images/badges/archived.png" width="250">
->
-> This project is deprecated and is no longer being actively maintained.
 
 # Einhorn: the language-independent shared socket manager
 
@@ -294,5 +291,4 @@ Ruby:
 
 ## About
 
-Einhorn is a project of [Stripe](https://stripe.com), led by [Carl Jackson](https://github.com/zenazn). Feel free to get in touch at
-info@stripe.com.
+Einhorn was a project of [Stripe](https://stripe.com). It is now maintained by [Contributed Systems](https://contribsys.com).
