@@ -2,11 +2,11 @@
 require File.expand_path('../lib/einhorn/version', __FILE__)
 
 Gem::Specification.new do |gem|
-  gem.authors       = ['Greg Brockman']
-  gem.email         = ['gdb@stripe.com']
+  gem.authors       = ['Greg Brockman', 'Mike Perham']
+  gem.email         = ['gdb@stripe.com', 'mperham@gmail.com']
   gem.summary       = 'Einhorn: the language-independent shared socket manager'
   gem.description   = 'Einhorn makes it easy to run multiple instances of an application server, all listening on the same port. You can also seamlessly restart your workers without dropping any requests. Einhorn requires minimal application-level support, making it easy to use with an existing project.'
-  gem.homepage      = 'https://github.com/stripe/einhorn'
+  gem.homepage      = 'https://github.com/contribsys/einhorn'
   gem.license       = 'MIT'
 
   gem.files         = `git ls-files`.split($\)
