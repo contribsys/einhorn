@@ -24,7 +24,7 @@ module Helpers
 
       stdout, stderr = "", ""
       communicator = nil
-      process = Bundler.with_clean_env do
+      process = Bundler.with_original_env do
         default_options = {
           :stdout => Subprocess::PIPE,
           :stderr => Subprocess::PIPE,

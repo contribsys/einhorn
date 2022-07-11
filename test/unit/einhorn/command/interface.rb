@@ -11,7 +11,7 @@ class InterfaceTest < EinhornTestCase
       conn.expects(:write).once.with do |message|
         # Remove trailing newline
         message = message[0...-1]
-        parsed = YAML.load(URI.unescape(message))
+        parsed = YAML.load(CGI.unescape(message))
         parsed['message'] =~ /Welcome, gdb/
       end
       request = {
