@@ -1,22 +1,7 @@
 
 # Einhorn: the language-independent shared socket manager
 
-![Einhorn](https://user-images.githubusercontent.com/923242/175769739-5b81bfc0-c60c-4045-bc1c-5f78d624b8fb.png)
-
-Let's say you have a server process which processes one request at a
-time. Your site is becoming increasingly popular, and this one process
-is no longer able to handle all of your inbound connections. However,
-you notice that your box's load number is low.
-
-So you start thinking about how to handle more requests. You could
-rewrite your server to use threads, but threads are a pain to program
-against (and maybe you're writing in Python or Ruby where you don't
-have true threads anyway). You could rewrite your server to be
-event-driven, but that'd require a ton of effort, and it wouldn't help
-you go beyond one core. So instead, you decide to just run multiple
-copies of your server process.
-
-Enter Einhorn. Einhorn makes it easy to run (and keep alive) multiple
+Einhorn makes it easy to run (and keep alive) multiple
 copies of a single long-lived process. If that process is a server
 listening on some socket, Einhorn will open the socket in the master
 process so that it's shared among the workers.
@@ -233,23 +218,6 @@ Then you could set `--reexec-as=` to the name of your bash script and it will ru
         --version                    Show version
 
 
-## Contributing
-
-### Development Status
-
-Einhorn is still in active operation at Stripe, but we are not maintaining
-Einhorn actively. PRs are very welcome, and we will review and merge,
-but we are unlikely to triage and fix reported issues without code.
-
-Contributions are definitely welcome. To contribute, just follow the
-usual workflow:
-
-1. Fork Einhorn
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Added some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Github pull request
-
 ## History
 
 Einhorn came about when Stripe was investigating seamless code
@@ -268,7 +236,7 @@ EventMachine-LE to support file-descriptor passing. Check out
 
 ## Compatibility
 
-Einhorn runs in Ruby 2.0, 2.1, and 2.2
+Einhorn runs in Ruby 2.5+.
 
 The following libraries ease integration with Einhorn with languages other than
 Ruby:
@@ -291,4 +259,5 @@ Ruby:
 
 ## About
 
-Einhorn was a project of [Stripe](https://stripe.com). It is now maintained by [Contributed Systems](https://contribsys.com).
+Einhorn was a project of [Stripe](https://stripe.com).
+It is now maintained by [Contributed Systems](https://contribsys.com).
