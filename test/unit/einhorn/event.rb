@@ -27,8 +27,8 @@ class EventTest < EinhornTestCase
       sock1 = stub(:fileno => 4)
       sock2 = stub(:fileno => 5)
 
-      conn1 = Einhorn::Event::Connection.open(sock1)
-      conn2 = Einhorn::Event::Connection.open(sock2)
+      _ = Einhorn::Event::Connection.open(sock1)
+      _ = Einhorn::Event::Connection.open(sock2)
 
       IO.expects(:select).once.with do |readers, writers, errs, timeout|
         Set.new(readers) == Set.new([sock1, sock2]) &&
@@ -44,7 +44,7 @@ class EventTest < EinhornTestCase
       sock1 = stub(:fileno => 4)
       sock2 = stub(:fileno => 5)
 
-      conn1 = Einhorn::Event::Connection.open(sock1)
+      _ = Einhorn::Event::Connection.open(sock1)
       conn2 = Einhorn::Event::Connection.open(sock2)
 
       sock2.expects(:write_nonblock).once.raises(Errno::EWOULDBLOCK.new)

@@ -19,7 +19,7 @@ module Helpers
     def with_running_einhorn(cmdline, options = {})
       options = options.dup
       einhorn_command = options.delete(:einhorn_command) { default_einhorn_command }
-      expected_exit_code = options.delete(:expected_exit_code) { nil }
+      _expected_exit_code = options.delete(:expected_exit_code) { nil }
       output_callback = options.delete(:output_callback) { nil }
 
       stdout, stderr = "", ""
@@ -51,7 +51,7 @@ module Helpers
         raise
       ensure
         unless (status = process.poll) && status.exited?
-          for i in 1..10 do
+          10.times do
             status = process.poll
             if status && status.exited?
               break

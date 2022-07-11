@@ -437,7 +437,7 @@ EOF
       begin
         # We do the joining so people don't need to worry about quoting
         parsed = YAML.load(args.join(' '))
-      rescue ArgumentError => e
+      rescue ArgumentError
         next 'Could not parse argument. Must be a YAML-encoded hash'
       end
 

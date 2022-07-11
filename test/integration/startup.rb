@@ -9,7 +9,7 @@ class StartupTest < EinhornIntegrationTestCase
         Subprocess.check_call(default_einhorn_command,
                               :stdout => Subprocess::PIPE,
                               :stderr => Subprocess::PIPE) do |einhorn|
-          stdout, stderr = einhorn.communicate
+          stdout, _stderr = einhorn.communicate
           assert_match(/\A## Usage/, stdout)
           assert_equal(1, einhorn.wait.exitstatus)
         end
@@ -22,7 +22,7 @@ class StartupTest < EinhornIntegrationTestCase
       Subprocess.check_call(default_einhorn_command + %w[--upgrade-check],
                             :stdout => Subprocess::PIPE,
                             :stderr => Subprocess::PIPE) do |einhorn|
-        stdout, stderr = einhorn.communicate
+        _stdout, _stderr = einhorn.communicate
         status = einhorn.wait
         assert_equal(0, status.exitstatus)
       end
