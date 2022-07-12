@@ -1,7 +1,7 @@
-require File.expand_path(File.join(File.dirname(__FILE__), '../../_lib'))
+require File.expand_path(File.join(File.dirname(__FILE__), "../../_lib"))
 
-require 'set'
-require 'einhorn'
+require "set"
+require "einhorn"
 
 module Einhorn::Event
   def self.reset
@@ -24,8 +24,8 @@ class EventTest < EinhornTestCase
     end
 
     it "selects on readable descriptors" do
-      sock1 = stub(:fileno => 4)
-      sock2 = stub(:fileno => 5)
+      sock1 = stub(fileno: 4)
+      sock2 = stub(fileno: 5)
 
       _ = Einhorn::Event::Connection.open(sock1)
       _ = Einhorn::Event::Connection.open(sock2)
@@ -33,48 +33,48 @@ class EventTest < EinhornTestCase
       IO.expects(:select).once.with do |readers, writers, errs, timeout|
         Set.new(readers) == Set.new([sock1, sock2]) &&
           writers == [] &&
-          errs == nil &&
-          timeout == nil
+          errs.nil? &&
+          timeout.nil?
       end.returns([[], [], []])
 
       Einhorn::Event.loop_once
     end
 
     it "selects on writeable descriptors" do
-      sock1 = stub(:fileno => 4)
-      sock2 = stub(:fileno => 5)
+      sock1 = stub(fileno: 4)
+      sock2 = stub(fileno: 5)
 
       _ = Einhorn::Event::Connection.open(sock1)
       conn2 = Einhorn::Event::Connection.open(sock2)
 
       sock2.expects(:write_nonblock).once.raises(Errno::EWOULDBLOCK.new)
-      conn2.write('Hello!')
+      conn2.write("Hello!")
 
       IO.expects(:select).once.with do |readers, writers, errs, timeout|
         Set.new(readers) == Set.new([sock1, sock2]) &&
           writers == [sock2] &&
-          errs == nil &&
-          timeout == nil
+          errs.nil? &&
+          timeout.nil?
       end.returns([[], [], []])
 
       Einhorn::Event.loop_once
     end
 
     it "runs callbacks for ready selectables" do
-      sock1 = stub(:fileno => 4)
-      sock2 = stub(:fileno => 5)
+      sock1 = stub(fileno: 4)
+      sock2 = stub(fileno: 5)
 
       conn1 = Einhorn::Event::Connection.open(sock1)
       conn2 = Einhorn::Event::Connection.open(sock2)
 
       sock2.expects(:write_nonblock).once.raises(Errno::EWOULDBLOCK.new)
-      conn2.write('Hello!')
+      conn2.write("Hello!")
 
       IO.expects(:select).once.with do |readers, writers, errs, timeout|
         Set.new(readers) == Set.new([sock1, sock2]) &&
           writers == [sock2] &&
-          errs == nil &&
-          timeout == nil
+          errs.nil? &&
+          timeout.nil?
       end.returns([[sock1], [sock2], []])
 
       conn1.expects(:notify_readable).once

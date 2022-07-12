@@ -1,18 +1,29 @@
-require 'fcntl'
-require 'optparse'
-require 'pp'
-require 'set'
-require 'socket'
-require 'tmpdir'
-require 'yaml'
-require 'shellwords'
+require "fcntl"
+require "optparse"
+require "pp"
+require "set"
+require "socket"
+require "tmpdir"
+require "yaml"
+require "shellwords"
 
 module Einhorn
   module AbstractState
-    def default_state; raise NotImplementedError.new('Override in extended modules'); end
-    def state; @state ||= default_state; end
-    def state=(v); @state = v; end
-    def dumpable_state; state; end
+    def default_state
+      raise NotImplementedError.new("Override in extended modules")
+    end
+
+    def state
+      @state ||= default_state
+    end
+
+    def state=(v)
+      @state = v
+    end
+
+    def dumpable_state
+      state
+    end
 
     def method_missing(name, *args)
       if (name.to_s =~ /(.*)=$/) && state.has_key?($1.to_sym)
@@ -37,39 +48,39 @@ module Einhorn
     # about backwards/forwards compatibility for upgrades/downgrades
     def self.default_state
       {
-        :children => {},
-        :config => {:number => 1, :backlog => 100, :seconds => 1},
-        :versions => {},
-        :version => 0,
-        :sockets => {},
-        :orig_cmd => nil,
-        :bind => [],
-        :bind_fds => [],
-        :bound_ports => [],
-        :cmd => nil,
-        :script_name => nil,
-        :respawn => true,
-        :upgrading => false,
-        :smooth_upgrade => false,
-        :reloading_for_upgrade => false,
-        :path => nil,
-        :cmd_name => nil,
-        :verbosity => 1,
-        :generation => 0,
-        :last_spinup => nil,
-        :ack_mode => {:type => :timer, :timeout => 1},
-        :kill_children_on_exit => false,
-        :command_socket_as_fd => false,
-        :socket_path => nil,
-        :pidfile => nil,
-        :lockfile => nil,
-        :consecutive_deaths_before_ack => 0,
-        :last_upgraded => nil,
-        :nice => {:master => nil, :worker => nil, :renice_cmd => '/usr/bin/renice'},
-        :reexec_commandline => nil,
-        :drop_environment_variables => [],
-        :signal_timeout => nil,
-        :preloaded => false
+        children: {},
+        config: {number: 1, backlog: 100, seconds: 1},
+        versions: {},
+        version: 0,
+        sockets: {},
+        orig_cmd: nil,
+        bind: [],
+        bind_fds: [],
+        bound_ports: [],
+        cmd: nil,
+        script_name: nil,
+        respawn: true,
+        upgrading: false,
+        smooth_upgrade: false,
+        reloading_for_upgrade: false,
+        path: nil,
+        cmd_name: nil,
+        verbosity: 1,
+        generation: 0,
+        last_spinup: nil,
+        ack_mode: {type: :timer, timeout: 1},
+        kill_children_on_exit: false,
+        command_socket_as_fd: false,
+        socket_path: nil,
+        pidfile: nil,
+        lockfile: nil,
+        consecutive_deaths_before_ack: 0,
+        last_upgraded: nil,
+        nice: {master: nil, worker: nil, renice_cmd: "/usr/bin/renice"},
+        reexec_commandline: nil,
+        drop_environment_variables: [],
+        signal_timeout: nil,
+        preloaded: false
       }
     end
   end
@@ -78,14 +89,14 @@ module Einhorn
     extend AbstractState
     def self.default_state
       {
-        :whatami => :master,
-        :script_name => nil,
-        :argv => [],
-        :environ => {},
-        :has_outstanding_spinup_timer => false,
-        :stateful => nil,
+        whatami: :master,
+        script_name: nil,
+        argv: [],
+        environ: {},
+        has_outstanding_spinup_timer: false,
+        stateful: nil,
         # Holds references so that the GC doesn't go and close your sockets.
-        :socket_handles => Set.new
+        socket_handles: Set.new
       }
     end
   end
@@ -113,15 +124,13 @@ module Einhorn
       # them all
       dead = []
       updated_state[:children].each do |pid, v|
-        begin
-          pid = Process.wait(pid, Process::WNOHANG)
-          dead << pid if pid
-        rescue Errno::ECHILD
-          dead << pid
-        end
+        pid = Process.wait(pid, Process::WNOHANG)
+        dead << pid if pid
+      rescue Errno::ECHILD
+        dead << pid
       end
       Einhorn::Event::Timer.open(0) do
-        dead.each {|pid| Einhorn::Command.cleanup(pid)}
+        dead.each { |pid| Einhorn::Command.cleanup(pid) }
       end
     end
 
@@ -130,12 +139,12 @@ module Einhorn
     deleted_keys = updated_state.keys - default.keys
     return [updated_state, message.first] if added_keys.length == 0 && deleted_keys.length == 0
 
-    added_keys.each {|key| updated_state[key] = default[key]}
-    deleted_keys.each {|key| updated_state.delete(key)}
+    added_keys.each { |key| updated_state[key] = default[key] }
+    deleted_keys.each { |key| updated_state.delete(key) }
 
     message << "adding default values for #{added_keys.inspect}"
     message << "deleting values for #{deleted_keys.inspect}"
-    message = "State format for #{store_name} has changed: #{message.join(', ')}"
+    message = "State format for #{store_name} has changed: #{message.join(", ")}"
 
     # Can't print yet, since state hasn't been set, so we pass along the message.
     [updated_state, message]
@@ -150,14 +159,14 @@ module Einhorn
     sd = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
     Einhorn::Compat.cloexec!(sd, false)
 
-    if flags.include?('r') || flags.include?('so_reuseaddr')
+    if flags.include?("r") || flags.include?("so_reuseaddr")
       sd.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, 1)
     end
 
     sd.bind(Socket.pack_sockaddr_in(port, addr))
     sd.listen(Einhorn::State.config[:backlog])
 
-    if flags.include?('n') || flags.include?('o_nonblock')
+    if flags.include?("n") || flags.include?("o_nonblock")
       fl = sd.fcntl(Fcntl::F_GETFL)
       sd.fcntl(Fcntl::F_SETFL, fl | Fcntl::O_NONBLOCK)
     end
@@ -167,23 +176,25 @@ module Einhorn
   end
 
   # Implement these ourselves so it plays nicely with state persistence
-  def self.log_debug(msg, tag=nil)
-    $stderr.puts("#{log_tag} DEBUG: #{msg}\n") if Einhorn::State.verbosity <= 0
+  def self.log_debug(msg, tag = nil)
+    warn("#{log_tag} DEBUG: #{msg}\n") if Einhorn::State.verbosity <= 0
     $stderr.flush
-    self.send_tagged_message(tag, msg) if tag
-  end
-  def self.log_info(msg, tag=nil)
-    $stderr.puts("#{log_tag} INFO: #{msg}\n") if Einhorn::State.verbosity <= 1
-    $stderr.flush
-    self.send_tagged_message(tag, msg) if tag
-  end
-  def self.log_error(msg, tag=nil)
-    $stderr.puts("#{log_tag} ERROR: #{msg}\n") if Einhorn::State.verbosity <= 2
-    $stderr.flush
-    self.send_tagged_message(tag, "ERROR: #{msg}") if tag
+    send_tagged_message(tag, msg) if tag
   end
 
-  def self.send_tagged_message(tag, message, last=false)
+  def self.log_info(msg, tag = nil)
+    warn("#{log_tag} INFO: #{msg}\n") if Einhorn::State.verbosity <= 1
+    $stderr.flush
+    send_tagged_message(tag, msg) if tag
+  end
+
+  def self.log_error(msg, tag = nil)
+    warn("#{log_tag} ERROR: #{msg}\n") if Einhorn::State.verbosity <= 2
+    $stderr.flush
+    send_tagged_message(tag, "ERROR: #{msg}") if tag
+  end
+
+  def self.send_tagged_message(tag, message, last = false)
     Einhorn::Command::Interface.send_tagged_message(tag, message, last)
   end
 
@@ -205,13 +216,13 @@ module Einhorn
   public
 
   def self.which(cmd)
-    if cmd.include?('/')
-      return cmd if File.exists?(cmd)
+    if cmd.include?("/")
+      return cmd if File.exist?(cmd)
       raise "Could not find #{cmd}"
     else
-      ENV['PATH'].split(':').each do |f|
+      ENV["PATH"].split(":").each do |f|
         abs = File.join(f, cmd)
-        return abs if File.exists?(abs)
+        return abs if File.exist?(abs)
       end
       raise "Could not find #{cmd} in PATH"
     end
@@ -221,7 +232,7 @@ module Einhorn
   def self.is_script(file)
     File.open(file) do |f|
       bytes = f.read(2)
-      bytes == '#!'
+      bytes == "#!"
     end
   end
 
@@ -233,7 +244,7 @@ module Einhorn
         # Reset preloaded state to false - this allows us to monitor for failed preloads during reloads.
         Einhorn::State.preloaded = false
         # If it's not going to be requireable, then load it.
-        if !path.end_with?('.rb') && File.exists?(path)
+        if !path.end_with?(".rb") && File.exist?(path)
           log_info("Loading #{path} (if this hangs, make sure your code can be properly loaded as a library)", :upgrade)
           load path
         else
@@ -274,7 +285,7 @@ module Einhorn
   def self.set_argv(cmd, set_ps_name)
     # TODO: clean up this hack
     idx = 0
-    if cmd[0] =~ /(^|\/)ruby$/
+    if /(^|\/)ruby$/.match?(cmd[0])
       idx = 1
     elsif !is_script(cmd[0])
       log_info("WARNING: Going to set $0 to #{cmd[idx]}, but it doesn't look like a script")
@@ -291,7 +302,7 @@ module Einhorn
       $0 = worker_ps_name
     end
 
-    ARGV[0..-1] = cmd[idx+1..-1]
+    ARGV[0..-1] = cmd[idx + 1..-1]
     log_info("Set#{set_ps_name ? " $0 = #{$0.inspect}, " : nil} ARGV = #{ARGV.inspect}")
   end
 
@@ -304,7 +315,7 @@ module Einhorn
   end
 
   def self.worker_ps_name
-    Einhorn::State.cmd_name ? "ruby #{Einhorn::State.cmd_name}" : Einhorn::State.orig_cmd.join(' ')
+    Einhorn::State.cmd_name ? "ruby #{Einhorn::State.cmd_name}" : Einhorn::State.orig_cmd.join(" ")
   end
 
   def self.renice_self
@@ -312,7 +323,7 @@ module Einhorn
     return unless nice = Einhorn::State.nice[whatami]
     pid = $$
 
-    unless nice.kind_of?(Fixnum)
+    unless nice.is_a?(Integer)
       raise "Nice must be a fixnum: #{nice.inspect}"
     end
 
@@ -343,7 +354,7 @@ module Einhorn
         opt = $1
         host = $2
         port = $3
-        flags = $4.split(',').select {|flag| flag.length > 0}.map {|flag| flag.downcase}
+        flags = $4.split(",").select { |flag| flag.length > 0 }.map { |flag| flag.downcase }
         Einhorn::State.sockets[[host, port]] ||= bind(host, port, flags)[0]
         fd = Einhorn::State.sockets[[host, port]]
         "#{opt}#{fd}"
@@ -355,7 +366,7 @@ module Einhorn
 
   # Construct and a command and args that can be used to re-exec
   # Einhorn for upgrades.
-  def self.upgrade_commandline(einhorn_flags=[])
+  def self.upgrade_commandline(einhorn_flags = [])
     cmdline = []
     if Einhorn::State.reexec_commandline
       cmdline += Einhorn::State.reexec_commandline
@@ -363,7 +374,7 @@ module Einhorn
       cmdline << Einhorn::TransientState.script_name
     end
     cmdline += einhorn_flags
-    cmdline << '--'
+    cmdline << "--"
     cmdline += Einhorn::State.cmd
     [cmdline[0], cmdline[1..-1]]
   end
@@ -375,7 +386,7 @@ module Einhorn
     upgrade_sentinel = fork do
       Einhorn::TransientState.whatami = :upgrade_sentinel
       Einhorn.initialize_reload_environment
-      Einhorn::Compat.exec(*Einhorn.upgrade_commandline(['--upgrade-check']))
+      Einhorn::Compat.exec(*Einhorn.upgrade_commandline(["--upgrade-check"]))
     end
     Process.wait(upgrade_sentinel)
     $?.exitstatus.zero?
@@ -400,10 +411,10 @@ module Einhorn
   # startup. Currently, this means the bundler and rbenv versions.
   def self.dump_environment_info
     log_info("Running under Ruby #{RUBY_VERSION}", :environment)
-    log_info("Rbenv ruby version: #{ENV['RBENV_VERSION']}", :environment) if ENV['RBENV_VERSION']
+    log_info("Rbenv ruby version: #{ENV["RBENV_VERSION"]}", :environment) if ENV["RBENV_VERSION"]
     begin
-      bundler_gem = Gem::Specification.find_by_name('bundler')
-      log_info("Using Bundler #{bundler_gem.version.to_s}", :environment)
+      bundler_gem = Gem::Specification.find_by_name("bundler")
+      log_info("Using Bundler #{bundler_gem.version}", :environment)
     rescue Gem::LoadError
     end
   end
@@ -459,10 +470,10 @@ module Einhorn
   end
 end
 
-require 'einhorn/command'
-require 'einhorn/compat'
-require 'einhorn/client'
-require 'einhorn/event'
-require 'einhorn/worker'
-require 'einhorn/worker_pool'
-require 'einhorn/version'
+require "einhorn/command"
+require "einhorn/compat"
+require "einhorn/client"
+require "einhorn/event"
+require "einhorn/worker"
+require "einhorn/worker_pool"
+require "einhorn/version"

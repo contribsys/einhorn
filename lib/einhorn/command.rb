@@ -1,23 +1,21 @@
-require 'pp'
-require 'set'
-require 'tmpdir'
+require "pp"
+require "set"
+require "tmpdir"
 
-require 'einhorn/command/interface'
-require 'einhorn/prctl'
+require "einhorn/command/interface"
+require "einhorn/prctl"
 
 module Einhorn
   module Command
     def self.reap
-      begin
-        while true
-          Einhorn.log_debug('Going to reap a child process')
-          pid = Process.wait(-1, Process::WNOHANG)
-          return unless pid
-          cleanup(pid)
-          Einhorn::Event.break_loop
-        end
-      rescue Errno::ECHILD
+      while true
+        Einhorn.log_debug("Going to reap a child process")
+        pid = Process.wait(-1, Process::WNOHANG)
+        return unless pid
+        cleanup(pid)
+        Einhorn::Event.break_loop
       end
+    rescue Errno::ECHILD
     end
 
     def self.cleanup(pid)
@@ -31,7 +29,7 @@ module Einhorn
       # Unacked worker
       if spec[:type] == :worker && !spec[:acked]
         Einhorn::State.consecutive_deaths_before_ack += 1
-        extra = ' before it was ACKed'
+        extra = " before it was ACKed"
       else
         extra = nil
       end
@@ -94,10 +92,8 @@ module Einhorn
         return
       end
 
-      if Einhorn::State.consecutive_deaths_before_ack > 0
-        extra = ", breaking the streak of #{Einhorn::State.consecutive_deaths_before_ack} consecutive unacked workers dying"
-      else
-        extra = nil
+      extra = if Einhorn::State.consecutive_deaths_before_ack > 0
+        ", breaking the streak of #{Einhorn::State.consecutive_deaths_before_ack} consecutive unacked workers dying"
       end
       Einhorn::State.consecutive_deaths_before_ack = 0
 
@@ -107,7 +103,7 @@ module Einhorn
       Einhorn::Event.break_loop
     end
 
-    def self.signal_all(signal, children=nil, record=true)
+    def self.signal_all(signal, children = nil, record = true)
       children ||= Einhorn::WorkerPool.workers
       signaled = {}
 
@@ -150,10 +146,10 @@ module Einhorn
 
             Einhorn.log_info("Child #{child.inspect} is still active after #{Einhorn::State.signal_timeout}s. Sending SIGKILL.")
             begin
-              Process.kill('KILL', child)
+              Process.kill("KILL", child)
             rescue Errno::ESRCH
             end
-            spec[:signaled].add('KILL')
+            spec[:signaled].add("KILL")
           end
         end
 
@@ -161,20 +157,19 @@ module Einhorn
       end
     end
 
-
     def self.increment
       Einhorn::Event.break_loop
       old = Einhorn::State.config[:number]
       new = (Einhorn::State.config[:number] += 1)
       output = "Incrementing number of workers from #{old} -> #{new}"
-      $stderr.puts(output)
+      warn(output)
       output
     end
 
     def self.decrement
       if Einhorn::State.config[:number] <= 1
         output = "Can't decrease number of workers (already at #{Einhorn::State.config[:number]}).  Run kill #{$$} if you really want to kill einhorn."
-        $stderr.puts(output)
+        warn(output)
         return output
       end
 
@@ -182,7 +177,7 @@ module Einhorn
       old = Einhorn::State.config[:number]
       new = (Einhorn::State.config[:number] -= 1)
       output = "Decrementing number of workers from #{old} -> #{new}"
-      $stderr.puts(output)
+      warn(output)
       output
     end
 
@@ -195,12 +190,12 @@ module Einhorn
       old = Einhorn::State.config[:number]
       Einhorn::State.config[:number] = new
       output = "Altering worker count, #{old} -> #{new}. Will "
-      if old < new
-        output << "spin up additional workers."
+      output << if old < new
+        "spin up additional workers."
       else
-        output << "gracefully terminate workers."
+        "gracefully terminate workers."
       end
-      $stderr.puts(output)
+      warn(output)
       output
     end
 
@@ -211,8 +206,8 @@ module Einhorn
       end
 
       {
-        :state => global_state,
-        :persistent_descriptors => descriptor_state,
+        state: global_state,
+        persistent_descriptors: descriptor_state
       }
     end
 
@@ -257,8 +252,8 @@ module Einhorn
 
       begin
         Einhorn.initialize_reload_environment
-        respawn_commandline = Einhorn.upgrade_commandline(['--with-state-fd', read.fileno.to_s])
-        respawn_commandline << { :close_others => false }
+        respawn_commandline = Einhorn.upgrade_commandline(["--with-state-fd", read.fileno.to_s])
+        respawn_commandline << {close_others: false}
         Einhorn.log_info("About to re-exec einhorn master as #{respawn_commandline.inspect}", :reload)
         Einhorn::Compat.exec(*respawn_commandline)
       rescue SystemCallError => e
@@ -275,16 +270,16 @@ module Einhorn
       end
     end
 
-    def self.spinup(cmd=nil)
+    def self.spinup(cmd = nil)
       cmd ||= Einhorn::State.cmd
       index = next_index
       expected_ppid = Process.pid
-      if Einhorn::State.preloaded
-        pid = fork do
+      pid = if Einhorn::State.preloaded
+        fork do
           Einhorn::TransientState.whatami = :worker
           prepare_child_process
 
-          Einhorn.log_info('About to tear down Einhorn state and run einhorn_main')
+          Einhorn.log_info("About to tear down Einhorn state and run einhorn_main")
           Einhorn::Command::Interface.uninit
           Einhorn::Event.close_all_for_worker
           Einhorn.set_argv(cmd, true)
@@ -297,7 +292,7 @@ module Einhorn
           einhorn_main
         end
       else
-        pid = fork do
+        fork do
           Einhorn::TransientState.whatami = :worker
           prepare_child_process
 
@@ -314,20 +309,20 @@ module Einhorn
           setup_parent_watch(expected_ppid)
 
           prepare_child_environment(index)
-          Einhorn::Compat.exec(cmd[0], cmd[1..-1], :close_others => false)
+          Einhorn::Compat.exec(cmd[0], cmd[1..-1], close_others: false)
         end
       end
 
       Einhorn.log_info("===> Launched #{pid} (index: #{index})", :upgrade)
       Einhorn::State.last_spinup = Time.now
       Einhorn::State.children[pid] = {
-        :type => :worker,
-        :version => Einhorn::State.version,
-        :acked => false,
-        :signaled => Set.new,
-        :last_signaled_at => nil,
-        :index => index,
-        :spinup_time => Einhorn::State.last_spinup,
+        type: :worker,
+        version: Einhorn::State.version,
+        acked: false,
+        signaled: Set.new,
+        last_signaled_at: nil,
+        index: index,
+        spinup_time: Einhorn::State.last_spinup
       }
 
       # Set up whatever's needed for ACKing
@@ -343,24 +338,24 @@ module Einhorn
 
     def self.prepare_child_environment(index)
       # This is run from the child
-      ENV['EINHORN_MASTER_PID'] = Process.ppid.to_s
-      ENV['EINHORN_SOCK_PATH'] = Einhorn::Command::Interface.socket_path
+      ENV["EINHORN_MASTER_PID"] = Process.ppid.to_s
+      ENV["EINHORN_SOCK_PATH"] = Einhorn::Command::Interface.socket_path
       if Einhorn::State.command_socket_as_fd
         socket = UNIXSocket.open(Einhorn::Command::Interface.socket_path)
         Einhorn::TransientState.socket_handles << socket
-        ENV['EINHORN_SOCK_FD'] = socket.fileno.to_s
+        ENV["EINHORN_SOCK_FD"] = socket.fileno.to_s
       end
 
-      ENV['EINHORN_FD_COUNT'] = Einhorn::State.bind_fds.length.to_s
-      Einhorn::State.bind_fds.each_with_index {|fd, i| ENV["EINHORN_FD_#{i}"] = fd.to_s}
+      ENV["EINHORN_FD_COUNT"] = Einhorn::State.bind_fds.length.to_s
+      Einhorn::State.bind_fds.each_with_index { |fd, i| ENV["EINHORN_FD_#{i}"] = fd.to_s }
 
-      ENV['EINHORN_CHILD_INDEX'] = index.to_s
+      ENV["EINHORN_CHILD_INDEX"] = index.to_s
 
       # EINHORN_FDS is deprecated. It was originally an attempt to
       # match Upstart's nominal internal support for space-separated
       # FD lists, but nobody uses that in practice, and it makes
       # finding individual FDs more difficult
-      ENV['EINHORN_FDS'] = Einhorn::State.bind_fds.map(&:to_s).join(' ')
+      ENV["EINHORN_FDS"] = Einhorn::State.bind_fds.map(&:to_s).join(" ")
     end
 
     # Reseed common ruby random number generators.
@@ -383,11 +378,11 @@ module Einhorn
 
       # reseed OpenSSL::Random if it's loaded
       if defined?(OpenSSL::Random)
-        if defined?(Random)
-          seed = Random.new_seed
+        seed = if defined?(Random)
+          Random.new_seed
         else
           # Ruby 1.8
-          seed = rand
+          rand
         end
         OpenSSL::Random.seed(seed.to_s)
       end
@@ -399,14 +394,14 @@ module Einhorn
     end
 
     def self.setup_parent_watch(expected_ppid)
-      if Einhorn::State.kill_children_on_exit then
+      if Einhorn::State.kill_children_on_exit
         begin
           # NB: Having the USR2 signal handler set to terminate (the default) at
           # this point is required. If it's set to a ruby handler, there are
           # race conditions that could cause the worker to leak.
 
           Einhorn::Prctl.set_pdeathsig("USR2")
-          if Process.ppid != expected_ppid then
+          if Process.ppid != expected_ppid
             Einhorn.log_error("Parent process died before we set pdeathsig; cowardly refusing to exec child process.")
             exit(1)
           end
@@ -424,18 +419,19 @@ module Einhorn
     #   upgrade, bring up all the new workers and don't cull any old workers
     #   until they're all up.
     #
-    def self.full_upgrade(options={})
-      options = {:smooth => false}.merge(options)
+    def self.full_upgrade(options = {})
+      options = {smooth: false}.merge(options)
 
       Einhorn::State.smooth_upgrade = options.fetch(:smooth)
       reload_for_upgrade
     end
 
     def self.full_upgrade_smooth
-      full_upgrade(:smooth => true)
+      full_upgrade(smooth: true)
     end
+
     def self.full_upgrade_fleet
-      full_upgrade(:smooth => false)
+      full_upgrade(smooth: false)
     end
 
     def self.reload_for_upgrade
@@ -448,7 +444,7 @@ module Einhorn
         Einhorn.log_info("Currently upgrading (#{Einhorn::WorkerPool.ack_count} / #{Einhorn::WorkerPool.ack_target} ACKs; bumping version and starting over)...", :upgrade)
       else
         Einhorn::State.upgrading = true
-        u_type = Einhorn::State.smooth_upgrade ? 'smooth' : 'fleet'
+        u_type = Einhorn::State.smooth_upgrade ? "smooth" : "fleet"
         Einhorn.log_info("Starting #{u_type} upgrade from version" +
                          " #{Einhorn::State.version}...", :upgrade)
       end
@@ -496,7 +492,7 @@ module Einhorn
       end
 
       if unsignaled > target
-        excess = Einhorn::WorkerPool.unsignaled_modern_workers_with_priority[0...(unsignaled-target)]
+        excess = Einhorn::WorkerPool.unsignaled_modern_workers_with_priority[0...(unsignaled - target)]
         Einhorn.log_info("Have too many workers at the current version, so killing off #{excess.length} of them.")
         signal_all("USR2", excess)
       end
@@ -507,13 +503,13 @@ module Einhorn
 
     def self.kill_expired_signaled_workers
       now = Time.now
-      children = Einhorn::State.children.select do |_,c|
+      children = Einhorn::State.children.select do |_, c|
         # Only interested in USR2 signaled workers
         next unless c[:signaled] && c[:signaled].length > 0
-        next unless c[:signaled].include?('USR2')
+        next unless c[:signaled].include?("USR2")
 
         # Ignore processes that have received KILL since it can't be trapped.
-        next if c[:signaled].include?('KILL')
+        next if c[:signaled].include?("KILL")
 
         # Filter out those children that have not reached signal_timeout yet.
         next unless c[:last_signaled_at]
@@ -527,12 +523,12 @@ module Einhorn
       children.each do |pid, child|
         Einhorn.log_info("Child #{pid.inspect} was signaled #{(child[:last_signaled_at] - now).abs.to_i}s ago. Sending SIGKILL as it is still active after #{Einhorn::State.signal_timeout}s timeout.", :upgrade)
         begin
-          Process.kill('KILL', pid)
+          Process.kill("KILL", pid)
         rescue Errno::ESRCH
           Einhorn.log_debug("Attempted to SIGKILL child #{pid.inspect} but the process does not exist.")
         end
 
-        child[:signaled].add('KILL')
+        child[:signaled].add("KILL")
         child[:last_signaled_at] = Time.now
       end
     end
@@ -559,7 +555,7 @@ module Einhorn
         return
       end
       Einhorn.log_info("Launching #{missing} new workers")
-      missing.times {spinup}
+      missing.times { spinup }
     end
 
     # Unbounded exponential backoff is not a thing: we run into problems if
@@ -568,7 +564,7 @@ module Einhorn
     # don't wait until the heat death of the universe to spin up new capacity.
     MAX_SPINUP_INTERVAL = 30.0
 
-    def self.replenish_gradually(max_unacked=nil)
+    def self.replenish_gradually(max_unacked = nil)
       return if Einhorn::TransientState.has_outstanding_spinup_timer
       return unless Einhorn::WorkerPool.missing_worker_count > 0
 
@@ -591,7 +587,7 @@ module Einhorn
 
       # Exponentially backoff automated spinup if we're just having
       # things die before ACKing
-      spinup_interval = Einhorn::State.config[:seconds] * (1.5 ** Einhorn::State.consecutive_deaths_before_ack)
+      spinup_interval = Einhorn::State.config[:seconds] * (1.5**Einhorn::State.consecutive_deaths_before_ack)
       spinup_interval = [spinup_interval, MAX_SPINUP_INTERVAL].min
       seconds_ago = (Time.now - Einhorn::State.last_spinup).to_f
 
@@ -618,14 +614,14 @@ module Einhorn
       end
     end
 
-    def self.quieter(log=true)
+    def self.quieter(log = true)
       Einhorn::State.verbosity += 1 if Einhorn::State.verbosity < 2
       output = "Verbosity set to #{Einhorn::State.verbosity}"
       Einhorn.log_info(output) if log
       output
     end
 
-    def self.louder(log=true)
+    def self.louder(log = true)
       Einhorn::State.verbosity -= 1 if Einhorn::State.verbosity > 0
       output = "Verbosity set to #{Einhorn::State.verbosity}"
       Einhorn.log_info(output) if log

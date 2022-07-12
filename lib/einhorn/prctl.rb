@@ -13,9 +13,9 @@ module Einhorn
     # Deliberately empty; NotImplementedError is intended
   end
 
-  if RUBY_PLATFORM =~ /linux/ then
+  if RUBY_PLATFORM.match?(/linux/)
     begin
-      require 'einhorn/prctl_linux'
+      require "einhorn/prctl_linux"
       Prctl = PrctlLinux
     rescue LoadError
       Prctl = PrctlUnimplemented

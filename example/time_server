@@ -12,15 +12,15 @@
 # or, if you want to try out preloading:
 #
 #     einhorn -b 127.0.0.1:2345,r -p ./time_server ./time_server
-require 'rubygems'
-require 'einhorn/worker'
+require "rubygems"
+require "einhorn/worker"
 
 def log(msg)
   puts "=== [#{$$}] #{msg}"
 end
 
 def einhorn_main
-  log "Called with ENV['EINHORN_FD_0']: #{ENV['EINHORN_FD_0']}"
+  log "Called with ENV['EINHORN_FD_0']: #{ENV["EINHORN_FD_0"]}"
 
   fd_num = Einhorn::Worker.socket!
   socket = Socket.for_fd(fd_num)

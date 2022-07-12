@@ -1,13 +1,13 @@
-require 'bundler/setup'
-require 'socket'
-require 'einhorn/worker'
+require "bundler/setup"
+require "socket"
+require "einhorn/worker"
 
 def einhorn_main
   serv = Socket.for_fd(Einhorn::Worker.socket!)
   Einhorn::Worker.ack!
   Einhorn::Worker.ping!("id-1")
 
-  Signal.trap('USR2') do
+  Signal.trap("USR2") do
     sleep ENV.fetch("TRAP_SLEEP").to_i
     exit
   end

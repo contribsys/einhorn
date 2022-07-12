@@ -1,14 +1,14 @@
-require File.expand_path(File.join(File.dirname(__FILE__), '../../_lib'))
+require File.expand_path(File.join(File.dirname(__FILE__), "../../_lib"))
 
-require 'einhorn'
+require "einhorn"
 
 class WorkerPoolTest < EinhornTestCase
   def stub_children
     Einhorn::State.stubs(:children).returns(
-      1234 => {:type => :worker, :signaled => Set.new(['INT'])},
-      1235 => {:type => :state_passer},
-      1236 => {:type => :worker, :signaled => Set.new}
-      )
+      1234 => {type: :worker, signaled: Set.new(["INT"])},
+      1235 => {type: :state_passer},
+      1236 => {type: :worker, signaled: Set.new}
+    )
   end
 
   describe "#workers_with_state" do
@@ -20,9 +20,9 @@ class WorkerPoolTest < EinhornTestCase
       workers_with_state = Einhorn::WorkerPool.workers_with_state
       # Sort only needed for Ruby 1.8
       assert_equal([
-          [1234, {:type => :worker, :signaled => Set.new(['INT'])}],
-          [1236, {:type => :worker, :signaled => Set.new}]
-        ], workers_with_state.sort)
+        [1234, {type: :worker, signaled: Set.new(["INT"])}],
+        [1236, {type: :worker, signaled: Set.new}]
+      ], workers_with_state.sort)
     end
   end
 

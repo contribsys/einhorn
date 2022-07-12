@@ -1,19 +1,19 @@
-require File.expand_path(File.join(File.dirname(__FILE__), '../../_lib'))
+require File.expand_path(File.join(File.dirname(__FILE__), "../../_lib"))
 
-require 'einhorn'
+require "einhorn"
 
 class CommandTest < EinhornTestCase
   include Einhorn
 
   describe "when running quieter" do
     it "increases the verbosity threshold" do
-      Einhorn::State.stubs(:verbosity => 1)
+      Einhorn::State.stubs(verbosity: 1)
       Einhorn::State.expects(:verbosity=).once.with(2).returns(2)
       Command.quieter
     end
 
     it "maxes out at 2" do
-      Einhorn::State.stubs(:verbosity => 2)
+      Einhorn::State.stubs(verbosity: 2)
       Einhorn::State.expects(:verbosity=).never
       Command.quieter
     end
@@ -24,7 +24,7 @@ class CommandTest < EinhornTestCase
       Einhorn::State.stubs(signal_timeout: 5 * 60)
       Einhorn::State.stubs(children: {
         12345 => {last_signaled_at: nil},
-        12346 => {signaled: Set.new(["USR1"]), last_signaled_at: Time.now - (2 * 60)},
+        12346 => {signaled: Set.new(["USR1"]), last_signaled_at: Time.now - (2 * 60)}
       })
 
       Process.expects(:kill).never
@@ -38,7 +38,7 @@ class CommandTest < EinhornTestCase
         Process.stub(:kill, true) do
           Einhorn::State.stubs(signal_timeout: 60)
           Einhorn::State.stubs(children: {
-            12346 => {signaled: Set.new(["USR2"]), last_signaled_at: Time.now - (2 * 60)},
+            12346 => {signaled: Set.new(["USR2"]), last_signaled_at: Time.now - (2 * 60)}
           })
 
           Einhorn::Command.kill_expired_signaled_workers
@@ -67,7 +67,7 @@ class CommandTest < EinhornTestCase
         children: {
           1 => {type: :worker, acked: true, signaled: Set.new},
           2 => {type: :worker, acked: true, signaled: Set.new},
-          3 => {type: :worker, acked: true, signaled: Set.new},
+          3 => {type: :worker, acked: true, signaled: Set.new}
         }
       )
       refute(Einhorn::Command.trigger_spinup?(1))

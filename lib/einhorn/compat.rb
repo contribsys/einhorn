@@ -11,10 +11,10 @@ module Einhorn
 
     def self.cloexec!(fd, enable)
       original = fd.fcntl(Fcntl::F_GETFD)
-      if enable
-        new = original | Fcntl::FD_CLOEXEC
+      new = if enable
+        original | Fcntl::FD_CLOEXEC
       else
-        new = original & (-Fcntl::FD_CLOEXEC-1)
+        original & (-Fcntl::FD_CLOEXEC - 1)
       end
       fd.fcntl(Fcntl::F_SETFD, new)
     end
@@ -24,7 +24,7 @@ module Einhorn
     end
 
     # Opts are ignored in Ruby 1.8
-    def self.exec(script, args, opts={})
+    def self.exec(script, args, opts = {})
       cmd = [script, script]
       begin
         Kernel.exec(cmd, *(args + [opts]))
@@ -53,18 +53,18 @@ module Einhorn
 
       # linux / friends
       begin
-        return File.read('/proc/cpuinfo').scan(/^processor\s*:/).count
+        return File.read("/proc/cpuinfo").scan(/^processor\s*:/).count
       rescue Errno::ENOENT
       end
 
       # OS X
-      if RUBY_PLATFORM =~ /darwin/
+      if RUBY_PLATFORM.match?(/darwin/)
         return Integer(`sysctl -n hw.logicalcpu`)
       end
 
       # windows / friends
       begin
-        require 'win32ole'
+        require "win32ole"
       rescue LoadError
       else
         wmi = WIN32OLE.connect("winmgmts://")

@@ -1,23 +1,21 @@
-require 'einhorn/client'
-require 'einhorn/command/interface'
+require "einhorn/client"
+require "einhorn/command/interface"
 
 module Einhorn
   module Worker
     class WorkerError < RuntimeError; end
 
     def self.is_worker?
-      begin
-        ensure_worker!
-      rescue WorkerError
-        false
-      else
-        true
-      end
+      ensure_worker!
+    rescue WorkerError
+      false
+    else
+      true
     end
 
     def self.ensure_worker!
       # Make sure that EINHORN_MASTER_PID is my parent
-      if ppid_s = ENV['EINHORN_MASTER_PID']
+      if ppid_s = ENV["EINHORN_MASTER_PID"]
         ppid = ppid_s.to_i
         raise WorkerError.new("EINHORN_MASTER_PID environment variable is #{ppid_s.inspect}, but my parent's pid is #{Process.ppid.inspect}. This probably means that I am a subprocess of an Einhorn worker, but am not one myself.") unless Process.ppid == ppid
         true
@@ -27,10 +25,8 @@ module Einhorn
     end
 
     def self.ack(*args)
-      begin
-        ack!(*args)
-      rescue WorkerError
-      end
+      ack!(*args)
+    rescue WorkerError
     end
 
     # Returns the index of this Einhorn child process.
@@ -42,7 +38,7 @@ module Einhorn
     # Returns nil if not running in Einhorn, or running on a version
     # of Einhorn that does not support indexing children.
     def self.einhorn_child_index
-      index = ENV['EINHORN_CHILD_INDEX']
+      index = ENV["EINHORN_CHILD_INDEX"]
       if index.nil? || index !~ /\A \d+ \z/x
         index
       else
@@ -65,9 +61,9 @@ module Einhorn
     # TODO: add a :fileno option? Easy to implement; not sure if it'd
     # be useful for anything. Maybe if it's always fd 3, because then
     # the user wouldn't have to provide an arg.
-    def self.ack!(discovery=:env, arg=nil)
+    def self.ack!(discovery = :env, arg = nil)
       handle_command_socket(discovery, arg) do |client|
-        client.send_command('command' => 'worker:ack', 'pid' => $$)
+        client.send_command("command" => "worker:ack", "pid" => $$)
       end
     end
 
@@ -84,18 +80,18 @@ module Einhorn
     #                Then @arg being true causes the FD to be left open after ACK;
     #                otherwise it is closed.
     #   :direct:     Provide the path to the command socket in @arg.
-    def self.ping!(request_id, discovery=:env, arg=nil)
+    def self.ping!(request_id, discovery = :env, arg = nil)
       handle_command_socket(discovery, arg) do |client|
-        client.send_command('command' => 'worker:ping', 'pid' => $$, 'request_id' => request_id)
+        client.send_command("command" => "worker:ping", "pid" => $$, "request_id" => request_id)
       end
     end
 
-    def self.socket(number=nil)
+    def self.socket(number = nil)
       number ||= 0
       einhorn_fd(number)
     end
 
-    def self.socket!(number=nil)
+    def self.socket!(number = nil)
       number ||= 0
 
       unless count = einhorn_fd_count
@@ -121,7 +117,7 @@ module Einhorn
     end
 
     def self.einhorn_fd_count
-      unless raw_count = ENV['EINHORN_FD_COUNT']
+      unless raw_count = ENV["EINHORN_FD_COUNT"]
         return 0
       end
       Integer(raw_count)
@@ -129,7 +125,7 @@ module Einhorn
 
     # Call this to handle graceful shutdown requests to your app.
     def self.graceful_shutdown(&blk)
-      Signal.trap('USR2', &blk)
+      Signal.trap("USR2", &blk)
     end
 
     private
@@ -140,10 +136,10 @@ module Einhorn
 
       case discovery
       when :env
-        socket = ENV['EINHORN_SOCK_PATH']
+        socket = ENV["EINHORN_SOCK_PATH"]
         client = Einhorn::Client.for_path(socket)
       when :fd
-        raise "No EINHORN_SOCK_FD provided in environment. Did you run einhorn with the -g flag?" unless fd_str = ENV['EINHORN_SOCK_FD']
+        raise "No EINHORN_SOCK_FD provided in environment. Did you run einhorn with the -g flag?" unless fd_str = ENV["EINHORN_SOCK_FD"]
 
         fd = Integer(fd_str)
         client = Einhorn::Client.for_fd(fd)

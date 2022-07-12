@@ -1,7 +1,7 @@
-require 'bundler/setup'
-require 'socket'
-require 'einhorn/worker'
-require 'einhorn/prctl'
+require "bundler/setup"
+require "socket"
+require "einhorn/worker"
+require "einhorn/prctl"
 
 def einhorn_main
   serv = Socket.for_fd(Einhorn::Worker.socket!)
@@ -10,7 +10,7 @@ def einhorn_main
 
   begin
     output = Einhorn::Prctl.get_pdeathsig
-    if output == nil then
+    if output.nil?
       output = "nil"
     end
   rescue NotImplementedError

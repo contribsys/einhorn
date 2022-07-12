@@ -7,13 +7,13 @@ module Einhorn
     end
 
     def self.workers
-      workers_with_state.map {|pid, _| pid}
+      workers_with_state.map { |pid, _| pid }
     end
 
     def self.unsignaled_workers
       workers_with_state.select do |pid, spec|
         spec[:signaled].length == 0
-      end.map {|pid, _| pid}
+      end.map { |pid, _| pid }
     end
 
     def self.modern_workers_with_state
@@ -23,15 +23,15 @@ module Einhorn
     end
 
     def self.acked_modern_workers_with_state
-      modern_workers_with_state.select {|pid, spec| spec[:acked]}
+      modern_workers_with_state.select { |pid, spec| spec[:acked] }
     end
 
     def self.modern_workers
-      modern_workers_with_state.map {|pid, _| pid}
+      modern_workers_with_state.map { |pid, _| pid }
     end
 
     def self.acked_modern_workers
-      acked_modern_workers_with_state.map {|pid, _| pid}
+      acked_modern_workers_with_state.map { |pid, _| pid }
     end
 
     def self.unsignaled_modern_workers_with_state
@@ -43,23 +43,23 @@ module Einhorn
     def self.acked_unsignaled_modern_workers
       acked_modern_workers_with_state.select do |_, spec|
         spec[:signaled].length == 0
-      end.map {|pid, _| pid}
+      end.map { |pid, _| pid }
     end
 
     def self.unsignaled_modern_workers_with_priority
       unsignaled_modern_workers_with_state.sort_by do |pid, spec|
         spec[:acked] ? 1 : 0
-      end.map {|pid, _| pid}
+      end.map { |pid, _| pid }
     end
 
     def self.unacked_unsignaled_modern_workers_with_state
-      modern_workers_with_state.select {|pid, spec|
+      modern_workers_with_state.select { |pid, spec|
         !spec[:acked] && spec[:signaled].length == 0
       }
     end
 
     def self.unacked_unsignaled_modern_workers
-      unacked_unsignaled_modern_workers_with_state.map {|pid, _| pid}
+      unacked_unsignaled_modern_workers_with_state.map { |pid, _| pid }
     end
 
     # Use the number of modern workers, rather than unsignaled modern

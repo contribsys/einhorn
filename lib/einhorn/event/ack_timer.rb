@@ -2,7 +2,7 @@ module Einhorn::Event
   class ACKTimer < Timer
     include Persistent
 
-    def initialize(time, pid, start=nil)
+    def initialize(time, pid, start = nil)
       super(time, start) do
         Einhorn::Command.register_timer_ack(time, pid)
       end
@@ -10,7 +10,7 @@ module Einhorn::Event
     end
 
     def to_state
-      {:class => self.class.to_s, :time => @time, :start => @start, :pid => @pid}
+      {class: self.class.to_s, time: @time, start: @start, pid: @pid}
     end
 
     def self.from_state(state)

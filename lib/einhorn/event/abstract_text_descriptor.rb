@@ -6,7 +6,7 @@ module Einhorn::Event
     @@instance_counter = 0
 
     def self.open(sock)
-      self.new(sock)
+      new(sock)
     end
 
     def initialize(sock)
@@ -49,7 +49,7 @@ module Einhorn::Event
         rescue EOFError, Errno::EPIPE, Errno::ECONNRESET
           close
           break
-        rescue StandardError => e
+        rescue => e
           log_error("Caught unrecognized error while reading from socket: #{e} (#{e.class})")
           close
           break
@@ -72,19 +72,17 @@ module Einhorn::Event
     end
 
     def notify_writeable
-      begin
-        return if @closed
-        written = @socket.write_nonblock(@write_buffer)
-      rescue Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::EINTR
-      rescue Errno::EPIPE, Errno::ECONNRESET
-        close
-      rescue StandardError => e
-        log_error("Caught unrecognized error while writing to socket: #{e} (#{e.class})")
-        close
-      else
-        log_debug("wrote #{written} bytes")
-        @write_buffer = @write_buffer[written..-1]
-      end
+      return if @closed
+      written = @socket.write_nonblock(@write_buffer)
+    rescue Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::EINTR
+    rescue Errno::EPIPE, Errno::ECONNRESET
+      close
+    rescue => e
+      log_error("Caught unrecognized error while writing to socket: #{e} (#{e.class})")
+      close
+    else
+      log_debug("wrote #{written} bytes")
+      @write_buffer = @write_buffer[written..-1]
     end
 
     def to_io
@@ -117,7 +115,7 @@ module Einhorn::Event
 
     # Override in subclass. This lets you do streaming reads.
     def parse_record
-      [@read_buffer, '']
+      [@read_buffer, ""]
     end
 
     def consume_record(record)

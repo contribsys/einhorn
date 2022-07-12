@@ -1,10 +1,10 @@
-require File.expand_path(File.join(File.dirname(__FILE__), '../../_lib'))
+require File.expand_path(File.join(File.dirname(__FILE__), "../../_lib"))
 
-require 'einhorn'
+require "einhorn"
 
 class ClientTest < EinhornTestCase
   def unserialized_message
-    {:foo => ['%bar', '%baz']}
+    {foo: ["%bar", "%baz"]}
   end
 
   def serialized_1_8
@@ -30,7 +30,7 @@ class ClientTest < EinhornTestCase
   describe "when sending a message" do
     it "writes a serialized line" do
       socket = mock
-      socket.expects(:write).with {|write| serialized_options.include?(write)}
+      socket.expects(:write).with { |write| serialized_options.include?(write) }
       Einhorn::Client::Transport.send_message(socket, unserialized_message)
     end
   end

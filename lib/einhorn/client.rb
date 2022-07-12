@@ -1,12 +1,11 @@
-require 'set'
-require 'yaml'
+require "set"
+require "yaml"
 
 module Einhorn
   class Client
     # Keep this in this file so client can be loaded entirely
     # standalone by user code.
     module Transport
-
       ParseError = defined?(Psych::SyntaxError) ? Psych::SyntaxError : ArgumentError
 
       def self.send_message(socket, message)
@@ -21,24 +20,24 @@ module Einhorn
 
       def self.serialize_message(message)
         serialized = YAML.dump(message)
-        escaped = serialized.gsub(/%|\n/, '%' => '%25', "\n" => '%0A')
+        escaped = serialized.gsub(/%|\n/, "%" => "%25", "\n" => "%0A")
         escaped + "\n"
       end
 
       def self.deserialize_message(line)
-        serialized = line.gsub(/%(25|0A)/, '%25' => '%', '%0A' => "\n")
+        serialized = line.gsub(/%(25|0A)/, "%25" => "%", "%0A" => "\n")
         YAML.load(serialized)
       end
     end
 
     def self.for_path(path_to_socket)
       socket = UNIXSocket.open(path_to_socket)
-      self.new(socket)
+      new(socket)
     end
 
     def self.for_fd(fileno)
       socket = UNIXSocket.for_fd(fileno)
-      self.new(socket)
+      new(socket)
     end
 
     def initialize(socket)

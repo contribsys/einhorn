@@ -17,7 +17,7 @@ module Einhorn::Event
     end
 
     def self.persistent?(descriptor)
-      @@persistent.values.any? {|klass| descriptor.kind_of?(klass)}
+      @@persistent.values.any? { |klass| descriptor.is_a?(klass) }
     end
   end
 end

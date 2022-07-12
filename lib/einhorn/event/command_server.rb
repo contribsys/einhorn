@@ -3,7 +3,7 @@ module Einhorn::Event
     include Persistent
 
     def self.open(server)
-      self.new(server)
+      new(server)
     end
 
     def initialize(server)
@@ -15,14 +15,12 @@ module Einhorn::Event
     end
 
     def notify_readable
-      begin
-        while true
-          return if @closed
-          sock = Einhorn::Compat.accept_nonblock(@server)
-          Connection.open(sock)
-        end
-      rescue Errno::EAGAIN
+      while true
+        return if @closed
+        sock = Einhorn::Compat.accept_nonblock(@server)
+        Connection.open(sock)
       end
+    rescue Errno::EAGAIN
     end
 
     def to_io
@@ -30,7 +28,7 @@ module Einhorn::Event
     end
 
     def to_state
-      {:class => self.class.to_s, :server => @server.fileno}
+      {class: self.class.to_s, server: @server.fileno}
     end
 
     def self.from_state(state)

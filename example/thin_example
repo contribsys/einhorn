@@ -6,12 +6,12 @@
 #   https://github.com/stripe/thin.git, and
 #   https://github.com/stripe/eventmachine.git
 
-require 'rubygems'
-require 'einhorn'
+require "rubygems"
+require "einhorn"
 
-require 'eventmachine-le'
-require 'thin'
-require 'thin/attach_socket'
+require "eventmachine-le"
+require "thin"
+require "thin/attach_socket"
 
 class App
   def initialize(id)
@@ -19,7 +19,7 @@ class App
   end
 
   def call(env)
-    return [200, {}, "[#{$$}] From server instance #{@id}: Got your request!\n"]
+    [200, {}, "[#{$$}] From server instance #{@id}: Got your request!\n"]
   end
 end
 
@@ -41,8 +41,8 @@ def einhorn_main
     (0...fd_count).each do |i|
       sock = Einhorn::Worker.socket!(i)
       srv = Thin::Server.new(App.new(i),
-        :backend => Thin::Backends::AttachSocket,
-        :socket => IO.for_fd(sock))
+        backend: Thin::Backends::AttachSocket,
+        socket: IO.for_fd(sock))
       srv.start
     end
   end

@@ -1,4 +1,4 @@
-require 'set'
+require "set"
 
 module Einhorn
   module Event
@@ -37,8 +37,8 @@ module Einhorn
 
     def self.persistent_descriptors
       descriptor_sets = @@readable.values + @@writeable.values + @@timers.values
-      descriptors = descriptor_sets.inject {|a, b| a | b}
-      descriptors.select {|descriptor| Einhorn::Event::Persistent.persistent?(descriptor)}
+      descriptors = descriptor_sets.inject { |a, b| a | b }
+      descriptors.select { |descriptor| Einhorn::Event::Persistent.persistent?(descriptor) }
     end
 
     def self.restore_persistent_descriptors(persistent_descriptors)
@@ -81,8 +81,8 @@ module Einhorn
 
     def self.writeable_fds
       writers = @@writeable.select do |io, writers|
-        writers.any? {|writer| writer.write_pending?}
-      end.map {|io, writers| io}
+        writers.any? { |writer| writer.write_pending? }
+      end.map { |io, writers| io }
       Einhorn.log_debug("Writeable fds are #{writers.inspect}")
       writers
     end
@@ -143,25 +143,25 @@ module Einhorn
 
       readable, writeable, _ = IO.select(readable_fds, writeable_fds, nil, time)
       (readable || []).each do |io|
-        @@readable[io].each {|reader| reader.notify_readable}
+        @@readable[io].each { |reader| reader.notify_readable }
       end
 
       (writeable || []).each do |io|
-        @@writeable[io].each {|writer| writer.notify_writeable}
+        @@writeable[io].each { |writer| writer.notify_writeable }
       end
     end
 
     def self.run_timers
-      @@timers.select {|expires_at, _| expires_at <= Time.now}.each do |expires_at, timers|
+      @@timers.select { |expires_at, _| expires_at <= Time.now }.each do |expires_at, timers|
         # Going to be modifying the set, so let's dup it.
-        timers.dup.each {|timer| timer.ring!}
+        timers.dup.each { |timer| timer.ring! }
       end
     end
 
     def self.break_loop
       Einhorn.log_debug("Breaking the loop")
       begin
-        @@loopbreak_writer.write_nonblock('a')
+        @@loopbreak_writer.write_nonblock("a")
       rescue Errno::EWOULDBLOCK, Errno::EAGAIN
         Einhorn.log_error("Loop break pipe is full -- probably means that we are quite backlogged")
       end
@@ -177,11 +177,11 @@ module Einhorn
   end
 end
 
-require 'einhorn/event/persistent'
-require 'einhorn/event/timer'
+require "einhorn/event/persistent"
+require "einhorn/event/timer"
 
-require 'einhorn/event/abstract_text_descriptor'
-require 'einhorn/event/ack_timer'
-require 'einhorn/event/command_server'
-require 'einhorn/event/connection'
-require 'einhorn/event/loop_breaker'
+require "einhorn/event/abstract_text_descriptor"
+require "einhorn/event/ack_timer"
+require "einhorn/event/command_server"
+require "einhorn/event/connection"
+require "einhorn/event/loop_breaker"

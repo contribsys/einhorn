@@ -1,5 +1,5 @@
-require 'tmpdir'
-require 'socket'
+require "tmpdir"
+require "socket"
 
 module Einhorn::Command
   module Interface
@@ -23,10 +23,8 @@ module Einhorn::Command
           # Don't nuke socket_path if we never successfully acquired it
           to_remove << socket_path if @@command_server
           to_remove.each do |file|
-            begin
-              File.unlink(file)
-            rescue Errno::ENOENT
-            end
+            File.unlink(file)
+          rescue Errno::ENOENT
           end
         end
       end
@@ -57,8 +55,8 @@ module Einhorn::Command
     # this lockfile lying around forever.
     def self.with_file_lock(&blk)
       path = lockfile
-      File.open(path, 'w', 0600) do |f|
-        unless f.flock(File::LOCK_EX|File::LOCK_NB)
+      File.open(path, "w", 0o600) do |f|
+        unless f.flock(File::LOCK_EX | File::LOCK_NB)
           raise "File lock already acquired by another Einhorn process. This likely indicates you tried to run Einhorn masters with the same cmd_name at the same time. This is a pretty rare race condition."
         end
 
@@ -96,7 +94,7 @@ module Einhorn::Command
     def self.write_pidfile
       file = pidfile
       Einhorn.log_info("Writing PID to #{file}")
-      File.open(file, 'w') {|f| f.write($$)}
+      File.write(file, $$)
     end
 
     def self.uninit
@@ -107,12 +105,12 @@ module Einhorn::Command
       Einhorn::State.socket_path || default_socket_path
     end
 
-    def self.default_socket_path(cmd_name=nil)
+    def self.default_socket_path(cmd_name = nil)
       cmd_name ||= Einhorn::State.cmd_name
-      if cmd_name
-        filename = "einhorn-#{cmd_name}.sock"
+      filename = if cmd_name
+        "einhorn-#{cmd_name}.sock"
       else
-        filename = "einhorn.sock"
+        "einhorn.sock"
       end
       File.join(Dir.tmpdir, filename)
     end
@@ -121,12 +119,12 @@ module Einhorn::Command
       Einhorn::State.lockfile || default_lockfile_path
     end
 
-    def self.default_lockfile_path(cmd_name=nil)
+    def self.default_lockfile_path(cmd_name = nil)
       cmd_name ||= Einhorn::State.cmd_name
-      if cmd_name
-        filename = "einhorn-#{cmd_name}.lock"
+      filename = if cmd_name
+        "einhorn-#{cmd_name}.lock"
       else
-        filename = "einhorn.lock"
+        "einhorn.lock"
       end
       File.join(Dir.tmpdir, filename)
     end
@@ -135,12 +133,12 @@ module Einhorn::Command
       Einhorn::State.pidfile || default_pidfile
     end
 
-    def self.default_pidfile(cmd_name=nil)
+    def self.default_pidfile(cmd_name = nil)
       cmd_name ||= Einhorn::State.cmd_name
-      if cmd_name
-        filename = "einhorn-#{cmd_name}.pid"
+      filename = if cmd_name
+        "einhorn-#{cmd_name}.pid"
       else
-        filename = "einhorn.pid"
+        "einhorn.pid"
       end
       File.join(Dir.tmpdir, filename)
     end
@@ -162,7 +160,7 @@ module Einhorn::Command
         Einhorn::Command.stop_respawning
         exit(1)
       end
-      trap_async("HUP") {Einhorn::Command.full_upgrade_smooth}
+      trap_async("HUP") { Einhorn::Command.full_upgrade_smooth }
       trap_async("ALRM") do
         Einhorn.log_error("Upgrading using SIGALRM is deprecated. Please switch to SIGHUP")
         Einhorn::Command.full_upgrade_smooth
@@ -191,14 +189,14 @@ module Einhorn::Command
     end
 
     def self.remove_handlers
-      %w{INT TERM QUIT HUP ALRM CHLD USR2}.each do |signal|
+      %w[INT TERM QUIT HUP ALRM CHLD USR2].each do |signal|
         Signal.trap(signal, "DEFAULT")
       end
     end
 
     ## Commands
-    def self.command(name, description=nil, &code)
-      @@commands[name] = {:description => description, :code => code}
+    def self.command(name, description = nil, &code)
+      @@commands[name] = {description: description, code: code}
     end
 
     def self.process_command(conn, command)
@@ -206,63 +204,63 @@ module Einhorn::Command
         request = Einhorn::Client::Transport.deserialize_message(command)
       rescue Einhorn::Client::Transport::ParseError
       end
-      unless request.kind_of?(Hash)
+      unless request.is_a?(Hash)
         send_message(conn, "Could not parse command")
         return
       end
 
       message = generate_message(conn, request)
       if !message.nil?
-        send_message(conn, message, request['id'], true)
+        send_message(conn, message, request["id"], true)
       else
         conn.log_debug("Got back nil response, so not responding to command.")
       end
     end
 
-    def self.send_tagged_message(tag, message, last=false)
+    def self.send_tagged_message(tag, message, last = false)
       Einhorn::Event.connections.each do |conn|
         if id = conn.subscription(tag)
-          self.send_message(conn, message, id, last)
+          send_message(conn, message, id, last)
           conn.unsubscribe(tag) if last
         end
       end
     end
 
-    def self.send_message(conn, message, request_id=nil, last=false)
+    def self.send_message(conn, message, request_id = nil, last = false)
       if request_id
-        response = {'message' => message, 'request_id' => request_id }
-        response['wait'] = true unless last
+        response = {"message" => message, "request_id" => request_id}
+        response["wait"] = true unless last
       else
         # support old-style protocol
-        response = {'message' => message}
+        response = {"message" => message}
       end
       Einhorn::Client::Transport.send_message(conn, response)
     end
 
     def self.generate_message(conn, request)
-      unless command_name = request['command']
+      unless command_name = request["command"]
         return 'No "command" parameter provided; not sure what you want me to do.'
       end
 
       if command_spec = @@commands[command_name]
         conn.log_debug("Received command: #{request.inspect}")
         begin
-          return command_spec[:code].call(conn, request)
-        rescue StandardError => e
+          command_spec[:code].call(conn, request)
+        rescue => e
           msg = "Error while processing command #{command_name.inspect}: #{e} (#{e.class})\n  #{e.backtrace.join("\n  ")}"
           conn.log_error(msg)
-          return msg
+          msg
         end
       else
         conn.log_debug("Received unrecognized command: #{request.inspect}")
-        return unrecognized_command(conn, request)
+        unrecognized_command(conn, request)
       end
     end
 
     def self.command_descriptions
       command_specs = @@commands.select do |_, spec|
         spec[:description]
-      end.sort_by {|name, _| name}
+      end.sort_by { |name, _| name }
 
       command_specs.map do |name, spec|
         "#{name}: #{spec[:description]}"
@@ -270,16 +268,16 @@ module Einhorn::Command
     end
 
     def self.unrecognized_command(conn, request)
-      <<EOF
-Unrecognized command: #{request['command'].inspect}
-
-#{command_descriptions}
-EOF
+      <<~EOF
+        Unrecognized command: #{request["command"].inspect}
+        
+        #{command_descriptions}
+      EOF
     end
 
     # Used by workers
-    command 'worker:ack' do |conn, request|
-      if pid = request['pid']
+    command "worker:ack" do |conn, request|
+      if pid = request["pid"]
         Einhorn::Command.register_manual_ack(pid)
       else
         conn.log_error("Invalid request (no pid): #{request.inspect}")
@@ -289,9 +287,9 @@ EOF
       nil
     end
 
-    command 'worker:ping' do |conn, request|
-      if pid = request['pid']
-        Einhorn::Command.register_ping(pid, request['request_id'])
+    command "worker:ping" do |conn, request|
+      if pid = request["pid"]
+        Einhorn::Command.register_ping(pid, request["request_id"])
       else
         conn.log_error("Invalid request (no pid): #{request.inspect}")
       end
@@ -301,25 +299,25 @@ EOF
     end
 
     # Used by einhornsh
-    command 'ehlo' do |conn, request|
-      <<EOF
-Welcome, #{request['user']}! You are speaking to Einhorn Master Process #{$$}#{Einhorn::State.cmd_name ? " (#{Einhorn::State.cmd_name})" : ''}.
-This is Einhorn #{Einhorn::VERSION}.
-EOF
+    command "ehlo" do |conn, request|
+      <<~EOF
+        Welcome, #{request["user"]}! You are speaking to Einhorn Master Process #{$$}#{Einhorn::State.cmd_name ? " (#{Einhorn::State.cmd_name})" : ""}.
+        This is Einhorn #{Einhorn::VERSION}.
+      EOF
     end
 
-    command 'help', 'Print out available commands' do
-"You are speaking to the Einhorn command socket. You can run the following commands:
+    command "help", "Print out available commands" do
+      "You are speaking to the Einhorn command socket. You can run the following commands:
 
 #{command_descriptions}
 "
     end
 
-    command 'state', "Get a dump of Einhorn's current state" do
-      YAML.dump({:state => Einhorn::State.dumpable_state})
+    command "state", "Get a dump of Einhorn's current state" do
+      YAML.dump({state: Einhorn::State.dumpable_state})
     end
 
-    command 'reload', 'Reload Einhorn' do |conn, request|
+    command "reload", "Reload Einhorn" do |conn, request|
       # TODO: make reload actually work (command socket reopening is
       # an issue). Would also be nice if user got a confirmation that
       # the reload completed, though that's not strictly necessary.
@@ -327,20 +325,20 @@ EOF
       # In the normal case, this will do a write
       # synchronously. Otherwise, the bytes will be stuck into the
       # buffer and lost upon reload.
-      send_message(conn, 'Reloading, as commanded', request['id'], true)
+      send_message(conn, "Reloading, as commanded", request["id"], true)
       Einhorn::Command.reload
     end
 
-    command 'inc', 'Increment the number of Einhorn child processes' do
+    command "inc", "Increment the number of Einhorn child processes" do
       Einhorn::Command.increment
     end
 
-    command 'dec', 'Decrement the number of Einhorn child processes' do
+    command "dec", "Decrement the number of Einhorn child processes" do
       Einhorn::Command.decrement
     end
 
-    command 'set_workers', 'Set the number of Einhorn child processes' do |conn, request|
-      args = request['args']
+    command "set_workers", "Set the number of Einhorn child processes" do |conn, request|
+      args = request["args"]
       if message = validate_args(args)
         next message
       end
@@ -354,38 +352,38 @@ EOF
       Einhorn::Command.set_workers(count)
     end
 
-    command 'quieter', 'Decrease verbosity' do
+    command "quieter", "Decrease verbosity" do
       Einhorn::Command.quieter
     end
 
-    command 'louder', 'Increase verbosity' do
+    command "louder", "Increase verbosity" do
       Einhorn::Command.louder
     end
 
-    command 'upgrade', 'Upgrade all Einhorn workers smoothly. This causes Einhorn to reload its own code as well.' do |conn, request|
+    command "upgrade", "Upgrade all Einhorn workers smoothly. This causes Einhorn to reload its own code as well." do |conn, request|
       # send first message directly for old clients that don't support request
       # ids or subscriptions. Everything else is sent tagged with request id
       # for new clients.
-      send_message(conn, 'Upgrading smoothly, as commanded', request['id'])
-      conn.subscribe(:upgrade, request['id'])
+      send_message(conn, "Upgrading smoothly, as commanded", request["id"])
+      conn.subscribe(:upgrade, request["id"])
       # If the app is preloaded this doesn't return.
       Einhorn::Command.full_upgrade_smooth
       nil
     end
 
-    command 'upgrade_fleet', 'Upgrade all Einhorn workers a fleet at a time. This causes Einhorn to reload its own code as well.' do |conn, request|
+    command "upgrade_fleet", "Upgrade all Einhorn workers a fleet at a time. This causes Einhorn to reload its own code as well." do |conn, request|
       # send first message directly for old clients that don't support request
       # ids or subscriptions. Everything else is sent tagged with request id
       # for new clients.
-      send_message(conn, 'Upgrading fleet, as commanded', request['id'])
-      conn.subscribe(:upgrade, request['id'])
+      send_message(conn, "Upgrading fleet, as commanded", request["id"])
+      conn.subscribe(:upgrade, request["id"])
       # If the app is preloaded this doesn't return.
       Einhorn::Command.full_upgrade_fleet
       nil
     end
 
-    command 'signal', 'Send one or more signals to all workers (args: SIG1 [SIG2 ...])' do |conn, request|
-      args = request['args']
+    command "signal", "Send one or more signals to all workers (args: SIG1 [SIG2 ...])" do |conn, request|
+      args = request["args"]
       if message = validate_args(args)
         next message
       end
@@ -403,9 +401,9 @@ EOF
       results.join("\n")
     end
 
-    command 'die', 'Send SIGNAL (default: SIGUSR2) to all workers, stop spawning new ones, and exit once all workers die (args: [SIGNAL])' do |conn, request|
+    command "die", "Send SIGNAL (default: SIGUSR2) to all workers, stop spawning new ones, and exit once all workers die (args: [SIGNAL])" do |conn, request|
       # TODO: dedup this code with signal
-      args = request['args']
+      args = request["args"]
       if message = validate_args(args)
         next message
       end
@@ -424,24 +422,24 @@ EOF
       "Einhorn is going down! #{response}"
     end
 
-    command 'config', 'Merge in a new set of config options. (Note: this will likely be subsumed by config file reloading at some point.)' do |conn, request|
-      args = request['args']
+    command "config", "Merge in a new set of config options. (Note: this will likely be subsumed by config file reloading at some point.)" do |conn, request|
+      args = request["args"]
       if message = validate_args(args)
         next message
       end
 
       unless args.length > 0
-        next 'Must pass in a YAML-encoded hash'
+        next "Must pass in a YAML-encoded hash"
       end
 
       begin
         # We do the joining so people don't need to worry about quoting
-        parsed = YAML.load(args.join(' '))
+        parsed = YAML.load(args.join(" "))
       rescue ArgumentError
-        next 'Could not parse argument. Must be a YAML-encoded hash'
+        next "Could not parse argument. Must be a YAML-encoded hash"
       end
 
-      unless parsed.kind_of?(Hash)
+      unless parsed.is_a?(Hash)
         next "Parsed argument is a #{parsed.class}, not a hash"
       end
 
@@ -451,11 +449,11 @@ EOF
     end
 
     def self.validate_args(args)
-      return 'No args provided' unless args
-      return 'Args must be an array' unless args.kind_of?(Array)
+      return "No args provided" unless args
+      return "Args must be an array" unless args.is_a?(Array)
 
       args.each do |arg|
-        return "Argument is a #{arg.class}, not a string: #{arg.inspect}" unless arg.kind_of?(String)
+        return "Argument is a #{arg.class}, not a string: #{arg.inspect}" unless arg.is_a?(String)
       end
 
       nil

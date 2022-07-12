@@ -1,9 +1,9 @@
-require 'rubygems'
-require 'bundler/setup'
+require "rubygems"
+require "bundler/setup"
 
-require 'minitest/autorun'
-require 'minitest/spec'
-require 'mocha/minitest'
+require "minitest/autorun"
+require "minitest/spec"
+require "mocha/minitest"
 
 class EinhornTestCase < ::MiniTest::Spec
   def setup

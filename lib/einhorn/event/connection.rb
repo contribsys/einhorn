@@ -11,8 +11,6 @@ module Einhorn::Event
       split = @read_buffer.split("\n", 2)
       if split.length > 1
         split
-      else
-        nil
       end
     end
 
@@ -21,7 +19,7 @@ module Einhorn::Event
     end
 
     def to_state
-      state = {:class => self.class.to_s, :socket => @socket.fileno}
+      state = {class: self.class.to_s, socket: @socket.fileno}
       # Don't include by default because it's not that pretty
       state[:read_buffer] = @read_buffer if @read_buffer.length > 0
       state[:write_buffer] = @write_buffer if @write_buffer.length > 0
