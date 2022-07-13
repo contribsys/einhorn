@@ -104,7 +104,7 @@ module Einhorn
   def self.load_yaml(raw)
     cooked_good = YAML.load(raw)
     options = {aliases: false}
-    options[:permitted_classes] = [Symbol, Set] if RUBY_VERSION > "2.5"
+    options[:permitted_classes] = [Symbol, Set] if RUBY_VERSION >= "2.6.0"
     # cooked_bad = YAML.safe_load(raw, options)
     # pp(bad: cooked_bad, good: cooked_good)
     cooked_good

@@ -28,7 +28,7 @@ module Einhorn
         serialized = line.gsub(/%(25|0A)/, "%25" => "%", "%0A" => "\n")
         # YAML.load(serialized)
         options = {}
-        options[:permitted_classes] = [Symbol, Set] if RUBY_VERSION > "2.5"
+        options[:permitted_classes] = [Symbol, Set] if RUBY_VERSION >= "2.6.0"
         YAML.safe_load(serialized, options)
       end
     end
