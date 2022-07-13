@@ -29,7 +29,7 @@ module Einhorn
         # YAML.load(serialized)
         if RUBY_VERSION >= "2.6.0"
           options = {aliases: false, permitted_classes: [Symbol, Set]}
-          YAML.safe_load(serialized, options)
+          YAML.safe_load(serialized, **options)
           # YAML.load(serialized)
         else
           YAML.load(serialized)
