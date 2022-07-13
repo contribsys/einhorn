@@ -101,8 +101,15 @@ module Einhorn
     end
   end
 
+  def self.load_yaml(raw)
+    cooked_good = YAML.load(raw)
+    # cooked_bad = YAML.safe_load(raw, permitted_classes: [Symbol, Set], aliases: false)
+    # pp(bad: cooked_bad, good: cooked_good)
+    cooked_good
+  end
+
   def self.restore_state(state)
-    parsed = YAML.load(state)
+    parsed = load_yaml(state)
     updated_state, message = update_state(Einhorn::State, "einhorn", parsed[:state])
     Einhorn::State.state = updated_state
     Einhorn::Event.restore_persistent_descriptors(parsed[:persistent_descriptors])

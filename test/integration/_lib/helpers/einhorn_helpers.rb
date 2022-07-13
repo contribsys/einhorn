@@ -106,7 +106,7 @@ module Helpers
 
     def get_state(client)
       client.send_command("command" => "state")
-      YAML.load(client.receive_message["message"])[:state]
+      Einhorn.load_yaml(client.receive_message["message"])[:state]
     end
 
     def wait_for_open_port
