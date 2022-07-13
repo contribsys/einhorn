@@ -6,6 +6,7 @@ require "socket"
 require "tmpdir"
 require "yaml"
 require "shellwords"
+require "date"
 
 module Einhorn
   module AbstractState
@@ -102,13 +103,16 @@ module Einhorn
   end
 
   def self.load_yaml(raw)
+    require 'awesome_print'
+    ap "#load_yaml"
+    ap raw
     if RUBY_VERSION >= "2.6.0"
-      options = {aliases: false, permitted_classes: [Symbol, Set]}
+      options = {aliases: true, permitted_classes: [Symbol, Set, Time]}
       YAML.safe_load(raw, **options)
       # YAML.load(raw)
     else
       YAML.load(raw)
-    end
+    end.tap { |y| ap(y) }
   end
 
   def self.restore_state(state)

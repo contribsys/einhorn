@@ -18,6 +18,8 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency "minitest"
   gem.add_development_dependency "mocha"
   gem.add_development_dependency "subprocess"
+  gem.add_development_dependency "awesome_print"
+  gem.add_development_dependency "pry"
 
   gem.version = Einhorn::VERSION
 end

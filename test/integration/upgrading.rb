@@ -1,6 +1,6 @@
 require(File.expand_path("_lib", File.dirname(__FILE__)))
 require "socket"
-require "einhorn/client"
+require "einhorn"
 
 class UpgradeTests < EinhornIntegrationTestCase
   include Helpers::EinhornHelpers

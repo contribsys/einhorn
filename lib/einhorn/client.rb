@@ -1,5 +1,6 @@
 require "set"
 require "yaml"
+require "date"
 
 module Einhorn
   class Client
@@ -25,15 +26,17 @@ module Einhorn
       end
 
       def self.deserialize_message(line)
+        require 'awesome_print'
+        ap "#deserialize_message"
+        ap line
         serialized = line.gsub(/%(25|0A)/, "%25" => "%", "%0A" => "\n")
         # YAML.load(serialized)
         if RUBY_VERSION >= "2.6.0"
-          options = {aliases: false, permitted_classes: [Symbol, Set]}
+          options = {aliases: true, permitted_classes: [Symbol, Set, Time]}
           YAML.safe_load(serialized, **options)
-          # YAML.load(serialized)
         else
           YAML.load(serialized)
-        end
+        end.tap { |y| ap(y) }
       end
     end
 
