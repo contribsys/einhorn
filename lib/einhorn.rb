@@ -104,8 +104,8 @@ module Einhorn
   def self.load_yaml(raw)
     if RUBY_VERSION >= "2.6.0"
       options = {aliases: false, permitted_classes: [Symbol, Set]}
-      # YAML.safe_load(raw, **options)
-      YAML.load(raw)
+      YAML.safe_load(raw, **options)
+      # YAML.load(raw)
     else
       YAML.load(raw)
     end
