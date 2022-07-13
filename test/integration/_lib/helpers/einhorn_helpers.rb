@@ -49,12 +49,12 @@ module Helpers
         raise
       ensure
         unless (status = process.poll) && status.exited?
-          10.times do
+          100.times do
             status = process.poll
             if status && status.exited?
               break
             end
-            sleep(1)
+            sleep(0.1)
           end
           unless status && status.exited?
             warn "Could not get Einhorn to quit within 10 seconds, killing it forcefully..."
@@ -71,8 +71,8 @@ module Helpers
       Subprocess.check_call(%W[bundle exec #{File.expand_path("bin/einhornsh")}] + commandline,
         {
           stdin: "/dev/null",
-          stdout: "/dev/null",
-          stderr: "/dev/null"
+          stdout: $stdout,
+          stderr: $stderr,
         }.merge(options))
     end
 
