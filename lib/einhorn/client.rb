@@ -26,7 +26,8 @@ module Einhorn
 
       def self.deserialize_message(line)
         serialized = line.gsub(/%(25|0A)/, "%25" => "%", "%0A" => "\n")
-        YAML.load(serialized)
+        # YAML.load(serialized)
+        YAML.safe_load(serialized, permitted_classes: [Symbol, Set])
       end
     end
 

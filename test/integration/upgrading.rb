@@ -74,7 +74,7 @@ class UpgradeTests < EinhornIntegrationTestCase
           client.send_command("command" => "state")
           resp = client.receive_message
 
-          state = YAML.load(resp["message"])
+          state = Einhorn.load_yaml(resp["message"])
           assert_equal(1, state[:state][:children].count)
 
           child = state[:state][:children].first.last
