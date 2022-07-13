@@ -27,7 +27,9 @@ module Einhorn
       def self.deserialize_message(line)
         serialized = line.gsub(/%(25|0A)/, "%25" => "%", "%0A" => "\n")
         # YAML.load(serialized)
-        YAML.safe_load(serialized, permitted_classes: [Symbol, Set])
+        options = {}
+        options[:permitted_classes] = [Symbol, Set] if RUBY_VERSION > "2.5"
+        YAML.safe_load(serialized, options)
       end
     end
 
