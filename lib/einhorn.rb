@@ -102,12 +102,13 @@ module Einhorn
   end
 
   def self.load_yaml(raw)
-    cooked_good = YAML.load(raw)
-    options = {aliases: false}
-    options[:permitted_classes] = [Symbol, Set] if RUBY_VERSION >= "2.6.0"
-    # cooked_bad = YAML.safe_load(raw, options)
-    # pp(bad: cooked_bad, good: cooked_good)
-    cooked_good
+    if RUBY_VERSION >= "2.6.0"
+      options = {aliases: false, permitted_classes: [Symbol, Set]}
+      # YAML.safe_load(raw, options)
+      YAML.load(raw)
+    else
+      YAML.load(raw)
+    end
   end
 
   def self.restore_state(state)
