@@ -1,5 +1,6 @@
 require "set"
 require "yaml"
+require "einhorn/safe_yaml"
 
 module Einhorn
   class Client
@@ -26,7 +27,7 @@ module Einhorn
 
       def self.deserialize_message(line)
         serialized = line.gsub(/%(25|0A)/, "%25" => "%", "%0A" => "\n")
-        YAML.load(serialized)
+        SafeYAML.load(serialized)
       end
     end
 

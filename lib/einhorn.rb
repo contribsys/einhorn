@@ -6,6 +6,7 @@ require "socket"
 require "tmpdir"
 require "yaml"
 require "shellwords"
+require "einhorn/safe_yaml"
 
 module Einhorn
   module AbstractState
@@ -102,7 +103,7 @@ module Einhorn
   end
 
   def self.restore_state(state)
-    parsed = YAML.load(state)
+    parsed = SafeYAML.load(state)
     updated_state, message = update_state(Einhorn::State, "einhorn", parsed[:state])
     Einhorn::State.state = updated_state
     Einhorn::Event.restore_persistent_descriptors(parsed[:persistent_descriptors])
