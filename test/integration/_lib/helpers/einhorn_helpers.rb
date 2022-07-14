@@ -49,12 +49,12 @@ module Helpers
         raise
       ensure
         unless (status = process.poll) && status.exited?
-          10.times do
+          100.times do
             status = process.poll
             if status&.exited?
               break
             end
-            sleep(1)
+            sleep(0.1)
           end
           unless status&.exited?
             warn "Could not get Einhorn to quit within 10 seconds, killing it forcefully..."
