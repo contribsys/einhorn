@@ -2,7 +2,7 @@
 require "bundler/gem_tasks"
 require "standard/rake"
 
-task default: :test
+task default: [:"standard:fix", :test]
 
 require "bundler/setup"
 require "rake/testtask"
