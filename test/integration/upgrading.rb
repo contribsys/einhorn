@@ -62,7 +62,7 @@ class UpgradeTests < EinhornIntegrationTestCase
         @server_program = File.join(@dir, "exiting_server.rb")
         @socket_path = File.join(@dir, "einhorn.sock")
 
-        reexec_cmdline = File.join(@dir, "upgrade_reexec.rb")
+        reexec_cmdline = File.join(@dir, "upgrade_reexec.sh")
 
         with_running_einhorn(%W[einhorn -m manual -b 127.0.0.1:#{@port} --reexec-as=#{reexec_cmdline} -d #{@socket_path} -- ruby #{@server_program}]) do |process|
           wait_for_open_port
