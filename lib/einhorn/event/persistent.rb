@@ -8,7 +8,7 @@ module Einhorn::Event
 
     def self.from_state(state)
       klass_name = state[:class]
-      if klass = @@persistent[klass_name]
+      if (klass = @@persistent[klass_name])
         klass.from_state(state)
       else
         Einhorn.log_error("Unrecognized persistent descriptor class #{klass_name.inspect}. Ignoring. This most likely indicates that your Einhorn version has upgraded. Everything should still be working, but it may be worth a restart.", :upgrade)

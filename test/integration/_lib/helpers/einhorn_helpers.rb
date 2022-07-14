@@ -51,19 +51,19 @@ module Helpers
         unless (status = process.poll) && status.exited?
           10.times do
             status = process.poll
-            if status && status.exited?
+            if status&.exited?
               break
             end
             sleep(1)
           end
-          unless status && status.exited?
+          unless status&.exited?
             warn "Could not get Einhorn to quit within 10 seconds, killing it forcefully..."
             process.send_signal("KILL")
             status = process.wait
           end
         end
         communicator.join
-        output_callback.call(stdout, stderr) if output_callback
+        output_callback&.call(stdout, stderr)
       end
     end
 
@@ -131,7 +131,7 @@ module Helpers
       begin
         socket.connect_nonblock(sockaddr)
       rescue ewouldblock
-        IO.select(nil, [socket], [], 5)
+        socket.wait_writable(5)
         begin
           socket.connect_nonblock(sockaddr)
         rescue Errno::EISCONN
@@ -139,7 +139,7 @@ module Helpers
       end
       socket.read.chomp
     ensure
-      socket.close if socket
+      socket&.close
     end
   end
 end

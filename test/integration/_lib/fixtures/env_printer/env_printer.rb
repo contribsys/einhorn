@@ -9,8 +9,8 @@ def einhorn_main
   Einhorn::Worker.ack!
   warn "Worker sent ack to einhorn"
   $stdout.puts "Environment from #{Process.pid} is: #{ENV.inspect}"
-  while true
-    s, addrinfo = serv.accept
+  loop do
+    s, _ = serv.accept
     warn "Worker got a socket!"
     output = ""
     ARGV.each do |variable_to_write|

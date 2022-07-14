@@ -15,7 +15,7 @@ module Einhorn::Event
     end
 
     def notify_readable
-      while true
+      loop do
         return if @closed
         sock = Einhorn::Compat.accept_nonblock(@server)
         Connection.open(sock)

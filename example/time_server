@@ -49,12 +49,12 @@ def einhorn_main
 
   # Real work happens here.
   begin
-    while true
+    loop do
       accepted, _ = socket.accept
       accepted.write("[#{$$}] The current time is: #{Time.now}!\n")
       accepted.close
     end
-  rescue Exception
+  rescue Interrupt
   end
 end
 

@@ -11,8 +11,8 @@ def einhorn_main
   warn "Worker sent ack to einhorn"
   Einhorn::Worker.ping!("id-1")
   warn "Worker has sent a ping to einhorn"
-  while true
-    s, addrinfo = serv.accept
+  loop do
+    s, _ = serv.accept
     warn "Worker got a socket!"
     s.write(version)
     s.flush

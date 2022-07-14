@@ -40,24 +40,22 @@ module Einhorn::Event
     end
 
     def notify_readable
-      while true
-        begin
-          return if @closed
-          chunk = @socket.read_nonblock(1024)
-        rescue Errno::EAGAIN
-          break
-        rescue EOFError, Errno::EPIPE, Errno::ECONNRESET
-          close
-          break
-        rescue => e
-          log_error("Caught unrecognized error while reading from socket: #{e} (#{e.class})")
-          close
-          break
-        else
-          log_debug("read #{chunk.length} bytes (#{chunk.inspect[0..20]})")
-          @read_buffer << chunk
-          process_read_buffer
-        end
+      loop do
+        return if @closed
+        chunk = @socket.read_nonblock(1024)
+      rescue Errno::EAGAIN
+        break
+      rescue EOFError, Errno::EPIPE, Errno::ECONNRESET
+        close
+        break
+      rescue => e
+        log_error("Caught unrecognized error while reading from socket: #{e} (#{e.class})")
+        close
+        break
+      else
+        log_debug("read #{chunk.length} bytes (#{chunk.inspect[0..20]})")
+        @read_buffer << chunk
+        process_read_buffer
       end
     end
 
@@ -100,9 +98,9 @@ module Einhorn::Event
     end
 
     def process_read_buffer
-      while true
+      loop do
         if @read_buffer.length > 0
-          break unless split = parse_record
+          break unless (split = parse_record)
           record, remainder = split
           log_debug("Read a record of #{record.length} bytes.")
           @read_buffer = remainder

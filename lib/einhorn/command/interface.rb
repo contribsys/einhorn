@@ -219,7 +219,7 @@ module Einhorn::Command
 
     def self.send_tagged_message(tag, message, last = false)
       Einhorn::Event.connections.each do |conn|
-        if id = conn.subscription(tag)
+        if (id = conn.subscription(tag))
           send_message(conn, message, id, last)
           conn.unsubscribe(tag) if last
         end
@@ -238,11 +238,11 @@ module Einhorn::Command
     end
 
     def self.generate_message(conn, request)
-      unless command_name = request["command"]
+      unless (command_name = request["command"])
         return 'No "command" parameter provided; not sure what you want me to do.'
       end
 
-      if command_spec = @@commands[command_name]
+      if (command_spec = @@commands[command_name])
         conn.log_debug("Received command: #{request.inspect}")
         begin
           command_spec[:code].call(conn, request)
@@ -277,7 +277,7 @@ module Einhorn::Command
 
     # Used by workers
     command "worker:ack" do |conn, request|
-      if pid = request["pid"]
+      if (pid = request["pid"])
         Einhorn::Command.register_manual_ack(pid)
       else
         conn.log_error("Invalid request (no pid): #{request.inspect}")
@@ -288,7 +288,7 @@ module Einhorn::Command
     end
 
     command "worker:ping" do |conn, request|
-      if pid = request["pid"]
+      if (pid = request["pid"])
         Einhorn::Command.register_ping(pid, request["request_id"])
       else
         conn.log_error("Invalid request (no pid): #{request.inspect}")
@@ -339,7 +339,7 @@ module Einhorn::Command
 
     command "set_workers", "Set the number of Einhorn child processes" do |conn, request|
       args = request["args"]
-      if message = validate_args(args)
+      if (message = validate_args(args))
         next message
       end
 
@@ -384,13 +384,13 @@ module Einhorn::Command
 
     command "signal", "Send one or more signals to all workers (args: SIG1 [SIG2 ...])" do |conn, request|
       args = request["args"]
-      if message = validate_args(args)
+      if (message = validate_args(args))
         next message
       end
 
       args = normalize_signals(args)
 
-      if message = validate_signals(args)
+      if (message = validate_signals(args))
         next message
       end
 
@@ -404,13 +404,13 @@ module Einhorn::Command
     command "die", "Send SIGNAL (default: SIGUSR2) to all workers, stop spawning new ones, and exit once all workers die (args: [SIGNAL])" do |conn, request|
       # TODO: dedup this code with signal
       args = request["args"]
-      if message = validate_args(args)
+      if (message = validate_args(args))
         next message
       end
 
       args = normalize_signals(args)
 
-      if message = validate_signals(args)
+      if (message = validate_signals(args))
         next message
       end
 
@@ -424,7 +424,7 @@ module Einhorn::Command
 
     command "config", "Merge in a new set of config options. (Note: this will likely be subsumed by config file reloading at some point.)" do |conn, request|
       args = request["args"]
-      if message = validate_args(args)
+      if (message = validate_args(args))
         next message
       end
 
@@ -434,7 +434,7 @@ module Einhorn::Command
 
       begin
         # We do the joining so people don't need to worry about quoting
-        parsed = YAML.load(args.join(" "))
+        parsed = SafeYAML.load(args.join(" "))
       rescue ArgumentError
         next "Could not parse argument. Must be a YAML-encoded hash"
       end

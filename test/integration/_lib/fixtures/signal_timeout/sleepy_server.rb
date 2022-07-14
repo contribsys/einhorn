@@ -12,7 +12,7 @@ def einhorn_main
     exit
   end
 
-  while true
+  loop do
     s, _ = serv.accept
     s.write($$)
     s.flush

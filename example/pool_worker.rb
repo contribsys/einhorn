@@ -12,7 +12,7 @@
 puts "From PID #{$$}: loading #{__FILE__}"
 
 def einhorn_main
-  while true
+  loop do
     puts "From PID #{$$}: Doing some work"
     sleep 1
   end

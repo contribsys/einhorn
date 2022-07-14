@@ -18,7 +18,7 @@ def einhorn_main
   end
 
   Einhorn::Worker.ack!
-  while true
+  loop do
     s, _ = serv.accept
     s.write(output)
     s.flush

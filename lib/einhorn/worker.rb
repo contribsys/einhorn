@@ -15,7 +15,7 @@ module Einhorn
 
     def self.ensure_worker!
       # Make sure that EINHORN_MASTER_PID is my parent
-      if ppid_s = ENV["EINHORN_MASTER_PID"]
+      if (ppid_s = ENV["EINHORN_MASTER_PID"])
         ppid = ppid_s.to_i
         raise WorkerError.new("EINHORN_MASTER_PID environment variable is #{ppid_s.inspect}, but my parent's pid is #{Process.ppid.inspect}. This probably means that I am a subprocess of an Einhorn worker, but am not one myself.") unless Process.ppid == ppid
         true
@@ -94,7 +94,7 @@ module Einhorn
     def self.socket!(number = nil)
       number ||= 0
 
-      unless count = einhorn_fd_count
+      unless (count = einhorn_fd_count)
         raise "No EINHORN_FD_COUNT provided in environment. Are you running under Einhorn?"
       end
 
@@ -102,7 +102,7 @@ module Einhorn
         raise "Only #{count} FDs available, but FD #{number} was requested"
       end
 
-      unless fd = einhorn_fd(number)
+      unless (fd = einhorn_fd(number))
         raise "No EINHORN_FD_#{number} provided in environment. That's pretty weird"
       end
 
@@ -110,14 +110,14 @@ module Einhorn
     end
 
     def self.einhorn_fd(n)
-      unless raw_fd = ENV["EINHORN_FD_#{n}"]
+      unless (raw_fd = ENV["EINHORN_FD_#{n}"])
         return nil
       end
       Integer(raw_fd)
     end
 
     def self.einhorn_fd_count
-      unless raw_count = ENV["EINHORN_FD_COUNT"]
+      unless (raw_count = ENV["EINHORN_FD_COUNT"])
         return 0
       end
       Integer(raw_count)
@@ -128,8 +128,6 @@ module Einhorn
       Signal.trap("USR2", &blk)
     end
 
-    private
-
     def self.handle_command_socket(discovery, contextual_arg)
       ensure_worker!
       close_after_use = true
@@ -139,7 +137,7 @@ module Einhorn
         socket = ENV["EINHORN_SOCK_PATH"]
         client = Einhorn::Client.for_path(socket)
       when :fd
-        raise "No EINHORN_SOCK_FD provided in environment. Did you run einhorn with the -g flag?" unless fd_str = ENV["EINHORN_SOCK_FD"]
+        raise "No EINHORN_SOCK_FD provided in environment. Did you run einhorn with the -g flag?" unless (fd_str = ENV["EINHORN_SOCK_FD"])
 
         fd = Integer(fd_str)
         client = Einhorn::Client.for_fd(fd)
@@ -156,11 +154,13 @@ module Einhorn
 
       true
     end
+    private_class_method :handle_command_socket
 
     def self.socket_from_filesystem(cmd_name)
       ppid = Process.ppid
       socket_path_file = Einhorn::Command::Interface.socket_path_file(ppid)
       File.read(socket_path_file)
     end
+    private_class_method :socket_from_filesystem
   end
 end

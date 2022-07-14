@@ -8,7 +8,7 @@ require "einhorn/prctl"
 module Einhorn
   module Command
     def self.reap
-      while true
+      loop do
         Einhorn.log_debug("Going to reap a child process")
         pid = Process.wait(-1, Process::WNOHANG)
         return unless pid
@@ -19,7 +19,7 @@ module Einhorn
     end
 
     def self.cleanup(pid)
-      unless spec = Einhorn::State.children[pid]
+      unless (spec = Einhorn::State.children[pid])
         Einhorn.log_error("Could not find any config for exited child #{pid.inspect}! This probably indicates a bug in Einhorn.")
         return
       end
@@ -45,7 +45,7 @@ module Einhorn
     end
 
     def self.register_ping(pid, request_id)
-      unless spec = Einhorn::State.children[pid]
+      unless (spec = Einhorn::State.children[pid])
         Einhorn.log_error("Could not find state for PID #{pid.inspect}; ignoring ACK.")
         return
       end
@@ -82,7 +82,7 @@ module Einhorn
     end
 
     def self.register_ack(pid)
-      unless spec = Einhorn::State.children[pid]
+      unless (spec = Einhorn::State.children[pid])
         Einhorn.log_error("Could not find state for PID #{pid.inspect}; ignoring ACK.")
         return
       end
@@ -110,7 +110,7 @@ module Einhorn
       Einhorn.log_info("Sending #{signal} to #{children.inspect}", :upgrade)
 
       children.each do |child|
-        unless spec = Einhorn::State.children[child]
+        unless (spec = Einhorn::State.children[child])
           Einhorn.log_error("Trying to send #{signal} to dead child #{child.inspect}. The fact we tried this probably indicates a bug in Einhorn.", :upgrade)
           next
         end
@@ -331,6 +331,7 @@ module Einhorn
       when :timer
         Einhorn::Event::ACKTimer.open(ack_mode[:timeout], pid)
       when :manual
+        # nothing to do
       else
         Einhorn.log_error("Unrecognized ACK mode #{type.inspect}")
       end
@@ -445,7 +446,7 @@ module Einhorn
       else
         Einhorn::State.upgrading = true
         u_type = Einhorn::State.smooth_upgrade ? "smooth" : "fleet"
-        Einhorn.log_info("Starting #{u_type} upgrade from version" +
+        Einhorn.log_info("Starting #{u_type} upgrade from version" \
                          " #{Einhorn::State.version}...", :upgrade)
       end
 

@@ -118,7 +118,7 @@ module Einhorn
 
     def self.timeout
       # (expires_at of the next timer) - now
-      if expires_at = @@timers.keys.sort[0]
+      if (expires_at = @@timers.keys.min)
         expires_at - Time.now
       else
         @@default_timeout
@@ -130,7 +130,7 @@ module Einhorn
       # handlers. Since it's just an array we push to/shift from, we
       # can be sure there's no race (such as adding hash keys during
       # iteration.)
-      while blk = @@signal_actions.shift
+      while (blk = @@signal_actions.shift)
         blk.call
       end
     end

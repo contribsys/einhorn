@@ -26,6 +26,12 @@ module Einhorn
       state
     end
 
+    def respond_to_missing?(name)
+      ((name.to_s =~ /(.*)=$/) && state.has_key?($1.to_sym)) ||
+        state.has_key?(name) ||
+        default_state.has_key?(name)
+    end
+
     def method_missing(name, *args)
       if (name.to_s =~ /(.*)=$/) && state.has_key?($1.to_sym)
         state.send(:[]=, $1.to_sym, *args)
@@ -199,8 +205,6 @@ module Einhorn
     Einhorn::Command::Interface.send_tagged_message(tag, message, last)
   end
 
-  private
-
   def self.log_tag
     case whatami = Einhorn::TransientState.whatami
     when :master
@@ -213,8 +217,7 @@ module Einhorn
       "[UNKNOWN (#{whatami.inspect}) #{$$}]"
     end
   end
-
-  public
+  private_class_method :log_tag
 
   def self.which(cmd)
     if cmd.include?("/")
@@ -238,7 +241,7 @@ module Einhorn
   end
 
   def self.preload
-    if path = Einhorn::State.path
+    if (path = Einhorn::State.path)
       set_argv(Einhorn::State.cmd, false)
 
       begin
@@ -254,7 +257,7 @@ module Einhorn
 
           force_move_to_oldgen if Einhorn::State.config[:gc_before_fork]
         end
-      rescue Exception => e
+      rescue StandardError, LoadError => e
         log_info("Proceeding with postload -- could not load #{path}: #{e} (#{e.class})\n  #{e.backtrace.join("\n  ")}", :upgrade)
       else
         if defined?(einhorn_main)
@@ -321,7 +324,7 @@ module Einhorn
 
   def self.renice_self
     whatami = Einhorn::TransientState.whatami
-    return unless nice = Einhorn::State.nice[whatami]
+    return unless (nice = Einhorn::State.nice[whatami])
     pid = $$
 
     unless nice.is_a?(Integer)
