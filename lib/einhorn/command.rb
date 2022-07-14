@@ -351,12 +351,6 @@ module Einhorn
       Einhorn::State.bind_fds.each_with_index { |fd, i| ENV["EINHORN_FD_#{i}"] = fd.to_s }
 
       ENV["EINHORN_CHILD_INDEX"] = index.to_s
-
-      # EINHORN_FDS is deprecated. It was originally an attempt to
-      # match Upstart's nominal internal support for space-separated
-      # FD lists, but nobody uses that in practice, and it makes
-      # finding individual FDs more difficult
-      ENV["EINHORN_FDS"] = Einhorn::State.bind_fds.map(&:to_s).join(" ")
     end
 
     # Reseed common ruby random number generators.
