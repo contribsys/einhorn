@@ -22,8 +22,8 @@ Gem::Specification.new do |gem|
     "changelog_uri" => "https://github.com/contribsys/einhorn/blob/main/Changes.md"
   }
 
-  gem.add_development_dependency "rake"
-  gem.add_development_dependency "minitest"
-  gem.add_development_dependency "mocha"
-  gem.add_development_dependency "subprocess"
+  gem.add_development_dependency "rake", "~> 13"
+  gem.add_development_dependency "minitest", "~> 5"
+  gem.add_development_dependency "mocha", "~> 1"
+  gem.add_development_dependency "subprocess", "~> 1"
 end
