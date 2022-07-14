@@ -13,11 +13,17 @@ Gem::Specification.new do |gem|
   gem.test_files = []
   gem.name = "einhorn"
   gem.require_paths = ["lib"]
+  gem.required_ruby_version = ">= 2.5.0"
+  gem.version = Einhorn::VERSION
+
+  gem.metadata = {
+    "bug_tracker_uri" => "https://github.com/contribsys/einhorn/issues",
+    "documentation_uri" => "https://github.com/contribsys/einhorn/wiki",
+    "changelog_uri" => "https://github.com/contribsys/einhorn/blob/main/Changes.md",
+  }
 
   gem.add_development_dependency "rake"
   gem.add_development_dependency "minitest"
   gem.add_development_dependency "mocha"
   gem.add_development_dependency "subprocess"
-
-  gem.version = Einhorn::VERSION
 end
