@@ -161,10 +161,6 @@ module Einhorn::Command
         exit(1)
       end
       trap_async("HUP") { Einhorn::Command.full_upgrade_smooth }
-      trap_async("ALRM") do
-        Einhorn.log_error("Upgrading using SIGALRM is deprecated. Please switch to SIGHUP")
-        Einhorn::Command.full_upgrade_smooth
-      end
       trap_async("CHLD") {}
       trap_async("USR2") do
         Einhorn::Command.signal_all("USR2")
