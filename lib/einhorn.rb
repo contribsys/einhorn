@@ -349,25 +349,6 @@ module Einhorn
     end
   end
 
-  # This duplicates some code from the environment path, but is
-  # deprecated so that's ok.
-  def self.socketify!(cmd)
-    cmd.map! do |arg|
-      if arg =~ /^(.*=|)srv:([^:]+):(\d+)((?:,\w+)*)$/
-        log_error("Using deprecated command-line configuration for Einhorn; should upgrade to the environment variable interface.")
-        opt = $1
-        host = $2
-        port = $3
-        flags = $4.split(",").select { |flag| flag.length > 0 }.map { |flag| flag.downcase }
-        Einhorn::State.sockets[[host, port]] ||= bind(host, port, flags)[0]
-        fd = Einhorn::State.sockets[[host, port]]
-        "#{opt}#{fd}"
-      else
-        arg
-      end
-    end
-  end
-
   # Construct and a command and args that can be used to re-exec
   # Einhorn for upgrades.
   def self.upgrade_commandline(einhorn_flags = [])
@@ -439,7 +420,6 @@ module Einhorn
       # TODO: don't actually alter ARGV[0]?
       Einhorn::State.cmd[0] = which(Einhorn::State.cmd[0])
       socketify_env!
-      socketify!(Einhorn::State.cmd)
     end
 
     set_master_ps_name
