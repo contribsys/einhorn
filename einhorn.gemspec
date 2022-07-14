@@ -19,7 +19,7 @@ Gem::Specification.new do |gem|
   gem.metadata = {
     "bug_tracker_uri" => "https://github.com/contribsys/einhorn/issues",
     "documentation_uri" => "https://github.com/contribsys/einhorn/wiki",
-    "changelog_uri" => "https://github.com/contribsys/einhorn/blob/main/Changes.md",
+    "changelog_uri" => "https://github.com/contribsys/einhorn/blob/main/Changes.md"
   }
 
   gem.add_development_dependency "rake"

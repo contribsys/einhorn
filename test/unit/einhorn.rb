@@ -33,10 +33,14 @@ class EinhornTest < EinhornTestCase
       # preloads the sleep worker since it has einhorn main
       Einhorn::State.path = "#{__dir__}/_lib/sleep_worker.rb"
       assert_equal(false, Einhorn::State.preloaded)
-      Einhorn.preload
+      quiet do
+        Einhorn.preload
+      end
       assert_equal(true, Einhorn::State.preloaded)
       # Attempt another preload
-      Einhorn.preload
+      quiet do
+        Einhorn.preload
+      end
       assert_equal(true, Einhorn::State.preloaded)
     end
 
@@ -44,11 +48,15 @@ class EinhornTest < EinhornTestCase
       Einhorn.stubs(:set_argv).returns
       Einhorn::State.path = "#{__dir__}/_lib/sleep_worker.rb"
       assert_equal(false, Einhorn::State.preloaded)
-      Einhorn.preload
+      quiet do
+        Einhorn.preload
+      end
       assert_equal(true, Einhorn::State.preloaded)
       # Change path to bad worker and preload again, should be false
       Einhorn::State.path = "#{__dir__}/_lib/bad_worker.rb"
-      Einhorn.preload
+      quiet do
+        Einhorn.preload
+      end
       assert_equal(false, Einhorn::State.preloaded)
     end
 
@@ -56,7 +64,9 @@ class EinhornTest < EinhornTestCase
       Einhorn.stubs(:set_argv).returns
       Einhorn::State.path = "#{__dir__}/bad_worker.rb"
       assert_equal(false, Einhorn::State.preloaded)
-      Einhorn.preload
+      quiet do
+        Einhorn.preload
+      end
       assert_equal(false, Einhorn::State.preloaded)
     end
   end
