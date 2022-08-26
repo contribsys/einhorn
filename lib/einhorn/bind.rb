@@ -9,7 +9,7 @@ module Einhorn::Bind
     end
   end
 
-  class InetBind < Bind
+  class Inet < Bind
     def initialize(host, port, flags)
       @host = host
       @port = port
@@ -21,7 +21,7 @@ module Einhorn::Bind
     end
 
     def family
-      "AF_INET"
+      Socket::AF_INET
     end
 
     def address
@@ -43,7 +43,7 @@ module Einhorn::Bind
     end
   end
 
-  class UnixBind < Bind
+  class Unix < Bind
     def initialize(path, flags)
       @path = path
       @flags = flags
@@ -54,7 +54,7 @@ module Einhorn::Bind
     end
 
     def family
-      "AF_UNIX"
+      Socket::AF_UNIX
     end
 
     def address

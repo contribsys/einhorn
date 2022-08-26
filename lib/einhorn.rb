@@ -144,7 +144,7 @@ module Einhorn
         updated_state[:bind].map! do |binding|
           # bindings used to just be arrays of [host,port,flags]
           if binding.is_a? Array
-            Bind::InetBind.new(*binding)
+            Bind::Inet.new(*binding)
           else
             binding
           end
@@ -187,7 +187,9 @@ module Einhorn
     end
 
     Einhorn::TransientState.socket_handles << sd
-    [sd.fileno, sd.local_address.ip_port]
+
+    sd_port = binding.family == Socket::AF_INET ? sd.local_address.ip_port : nil
+    [sd.fileno, sd_port]
   end
 
   # Implement these ourselves so it plays nicely with state persistence
@@ -351,8 +353,9 @@ module Einhorn
 
   def self.socketify_env!
     Einhorn::State.bind.each do |binding|
-      fd = bind(binding)
+      fd, actual_port = bind(binding)
       Einhorn::State.bind_fds << fd
+      Einhorn::State.bound_ports << actual_port if actual_port
     end
   end
 
@@ -366,7 +369,7 @@ module Einhorn
         host = $2
         port = $3
         flags = $4.split(',').select {|flag| flag.length > 0}.map {|flag| flag.downcase}
-        binding = Bind::InetBind.new(host, port, flags)
+        binding = Bind::Inet.new(host, port, flags)
         fd = (Einhorn::State.sockets[[host, port]] ||= bind(binding))
         "#{opt}#{fd}"
       else
