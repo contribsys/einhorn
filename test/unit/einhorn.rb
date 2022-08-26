@@ -24,13 +24,13 @@ class EinhornTest < EinhornTestCase
   end
 
   describe ".bind" do
-    it 'should work with AF_INET bindings' do
-      uds = Einhorn::Bind::Unix.new("/tmp/einhorn-test.sock","n")
+    it "should work with AF_INET bindings" do
+      uds = Einhorn::Bind::Unix.new("/tmp/einhorn-test.sock", "n")
       Einhorn.bind(uds)
     end
 
-    it 'should work with AF_UNIX bindings' do
-      inet = Einhorn::Bind::Inet.new("127.0.0.1", "1313","r")
+    it "should work with AF_UNIX bindings" do
+      inet = Einhorn::Bind::Inet.new("127.0.0.1", "1313", "r")
       Einhorn.bind(inet)
     end
   end

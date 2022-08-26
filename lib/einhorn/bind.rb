@@ -1,11 +1,11 @@
-require 'socket'
+require "socket"
 
 module Einhorn::Bind
   class Bind
     attr_reader :flags
 
-    def ==(o)
-      o.class == self.class && o.state == state
+    def ==(other)
+      other.class == self.class && other.state == state
     end
   end
 
@@ -31,7 +31,7 @@ module Einhorn::Bind
     def make_socket
       sd = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
 
-      if @flags.include?('r') || @flags.include?('so_reuseaddr')
+      if @flags.include?("r") || @flags.include?("so_reuseaddr")
         sd.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, 1)
       end
 
@@ -58,7 +58,7 @@ module Einhorn::Bind
     end
 
     def address
-      "#{@path}"
+      @path.to_s
     end
 
     def make_socket
@@ -90,7 +90,7 @@ module Einhorn::Bind
     end
 
     def bind(sock)
-      self.clean_old_unix_socket
+      clean_old_unix_socket
       sock.bind(Socket.pack_sockaddr_un(@path))
     end
   end

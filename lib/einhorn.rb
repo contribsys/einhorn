@@ -140,14 +140,12 @@ module Einhorn
         dead.each { |pid| Einhorn::Command.cleanup(pid) }
       end
 
-      if updated_state[:bind]
-        updated_state[:bind].map! do |binding|
-          # bindings used to just be arrays of [host,port,flags]
-          if binding.is_a? Array
-            Bind::Inet.new(*binding)
-          else
-            binding
-          end
+      updated_state[:bind]&.map! do |binding|
+        # bindings used to just be arrays of [host,port,flags]
+        if binding.is_a? Array
+          Bind::Inet.new(*binding)
+        else
+          binding
         end
       end
     end
@@ -175,13 +173,13 @@ module Einhorn
   def self.bind(binding)
     log_info("Binding to #{binding.address} with flags #{binding.flags.inspect}")
 
-    sd = binding.make_socket()
+    sd = binding.make_socket
     Einhorn::Compat.cloexec!(sd, false)
 
     binding.bind(sd)
     sd.listen(Einhorn::State.config[:backlog])
 
-    if binding.flags.include?('n') || binding.flags.include?('o_nonblock')
+    if binding.flags.include?("n") || binding.flags.include?("o_nonblock")
       fl = sd.fcntl(Fcntl::F_GETFL)
       sd.fcntl(Fcntl::F_SETFL, fl | Fcntl::O_NONBLOCK)
     end
@@ -368,7 +366,7 @@ module Einhorn
         opt = $1
         host = $2
         port = $3
-        flags = $4.split(',').select {|flag| flag.length > 0}.map {|flag| flag.downcase}
+        flags = $4.split(",").select { |flag| flag.length > 0 }.map { |flag| flag.downcase }
         binding = Bind::Inet.new(host, port, flags)
         fd = (Einhorn::State.sockets[[host, port]] ||= bind(binding))
         "#{opt}#{fd}"

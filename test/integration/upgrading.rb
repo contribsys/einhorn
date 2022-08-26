@@ -90,7 +90,10 @@ class UpgradeTests < EinhornIntegrationTestCase
           # exec the new einhorn with the same environment:
           reexec_cmdline = "env VAR=b OINK=b bundle exec --keep-file-descriptors einhorn"
 
-          with_running_einhorn(%W[einhorn -m manual -b 127.0.0.1:#{@port} --reexec-as=#{reexec_cmdline} -d #{@socket_path} -- ruby #{@server_program} VAR],
+
+          cmd = %W[einhorn -m manual -b 127.0.0.1:#{@port} --reexec-as=#{reexec_cmdline} -d #{@socket_path} -- ruby #{@server_program} VAR]
+
+          with_running_einhorn(cmd,
             env: ENV.to_hash.merge({"VAR" => "a"})) do |process|
             wait_for_open_port
             einhornsh(%W[-d #{@socket_path} -e upgrade])

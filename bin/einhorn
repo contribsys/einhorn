@@ -215,9 +215,9 @@ if true # $0 == __FILE__
       flags = $~["flags"].split(",").reject(&:empty?).map(&:downcase)
 
       bind = if $~["path"]
-        Einhorn::Bind::UnixBind.new($~["path"], flags)
+        Einhorn::Bind::Unix.new($~["path"], flags)
       else
-        Einhorn::Bind::InetBind.new($~["host"], Integer($~["port"]), flags)
+        Einhorn::Bind::Inet.new($~["host"], Integer($~["port"]), flags)
       end
 
       Einhorn::State.bind << bind
