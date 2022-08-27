@@ -186,7 +186,7 @@ module Einhorn
 
     Einhorn::TransientState.socket_handles << sd
 
-    sd_port = binding.family == Socket::AF_INET ? sd.local_address.ip_port : nil
+    sd_port = binding.family == "AF_INET" ? sd.local_address.ip_port : nil
     [sd.fileno, sd_port]
   end
 

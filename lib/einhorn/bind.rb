@@ -21,7 +21,7 @@ module Einhorn::Bind
     end
 
     def family
-      Socket::AF_INET
+      "AF_INET"
     end
 
     def address
@@ -54,7 +54,7 @@ module Einhorn::Bind
     end
 
     def family
-      Socket::AF_UNIX
+      "AF_UNIX"
     end
 
     def address

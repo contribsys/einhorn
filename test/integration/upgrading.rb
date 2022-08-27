@@ -90,7 +90,6 @@ class UpgradeTests < EinhornIntegrationTestCase
           # exec the new einhorn with the same environment:
           reexec_cmdline = "env VAR=b OINK=b bundle exec --keep-file-descriptors einhorn"
 
-
           cmd = %W[einhorn -m manual -b 127.0.0.1:#{@port} --reexec-as=#{reexec_cmdline} -d #{@socket_path} -- ruby #{@server_program} VAR]
 
           with_running_einhorn(cmd,
