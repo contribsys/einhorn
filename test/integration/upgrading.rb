@@ -35,8 +35,27 @@ class UpgradeTests < EinhornIntegrationTestCase
       @port = find_free_port
       @server_program = File.join(@dir, "env_printer.rb")
       @socket_path = File.join(@dir, "einhorn.sock")
+
+      mangler = ('a'..'z').to_a.shuffle[0,8].join
+      @unix_listener_socket_path = "unix-listener-einhorn-#{mangler}.sock"
     end
     after { cleanup_fixtured_directories }
+
+    describe "when running as a unix domain socket listener" do
+      it "preserves environment variables across restarts" do
+        # exec the new einhorn with the same environment:
+        reexec_cmdline = "env VAR=a bundle exec --keep-file-descriptors einhorn"
+
+        with_running_einhorn(%W[einhorn -m manual -b #{@unix_listener_socket_path} --reexec-as=#{reexec_cmdline} -d #{@socket_path} -- ruby #{@server_program} VAR],
+          env: ENV.to_hash.merge({"VAR" => "a"})) do |process|
+          wait_for_open_socket
+          einhornsh(%W[-d #{@socket_path} -e upgrade])
+          assert_equal("a", read_from_socket, "Should report the upgraded version")
+
+          process.terminate
+        end
+      end
+    end
 
     describe "when running with --reexec-as" do
       it "preserves environment variables across restarts" do
