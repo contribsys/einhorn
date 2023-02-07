@@ -227,7 +227,7 @@ want to use its HTTP functionality. So Einhorn was born, providing the
 master process functionality of Unicorn (and similar preforking
 servers) to a wider array of applications.
 
-See https://stripe.com/blog/meet-einhorn for more background.
+Read more background at [Meet Einhorn](https://web.archive.org/web/20210507145921/https://stripe.com/blog/meet-einhorn).
 
 Stripe currently uses Einhorn in production for a number of
 services. You can use Conrad Irwin's thin-attach_socket gem along with
