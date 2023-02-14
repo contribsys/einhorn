@@ -95,6 +95,7 @@ module Helpers
 
     def cleanup_fixtured_directories
       (@fixtured_dirs || []).each { |dir| FileUtils.rm_rf(dir) }
+      FileUtils.rm_rf(@unix_listener_socket_path)
     end
 
     def find_free_port(host = "127.0.0.1")
@@ -109,11 +110,12 @@ module Helpers
       Einhorn::SafeYAML.load(client.receive_message["message"])[:state]
     end
 
-    def wait_for_open_port
+
+    def mash_retry(&block)
       max_retries = 50
       begin
-        read_from_port
-      rescue Errno::ECONNREFUSED
+        yield
+      rescue Errno::ECONNREFUSED, Errno::ENOENT
         max_retries -= 1
         if max_retries <= 0
           raise
@@ -121,6 +123,27 @@ module Helpers
           sleep 0.1
           retry
         end
+      end
+    end
+
+    def wait_for_open_socket
+      mash_retry do
+        read_from_socket
+      end
+    end
+
+    def wait_for_open_port
+      mash_retry do
+        read_from_port
+      end
+    end
+
+    def read_from_socket
+      begin
+        socket = UNIXSocket.new(@unix_listener_socket_path)
+        socket.read.chomp
+      ensure
+        socket&.close
       end
     end
 

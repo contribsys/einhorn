@@ -23,6 +23,18 @@ class EinhornTest < EinhornTestCase
     end
   end
 
+  describe ".bind" do
+    it "should work with AF_INET bindings" do
+      uds = Einhorn::Bind::Unix.new("/tmp/einhorn-test.sock", "n")
+      Einhorn.bind(uds)
+    end
+
+    it "should work with AF_UNIX bindings" do
+      inet = Einhorn::Bind::Inet.new("127.0.0.1", "1313", "r")
+      Einhorn.bind(inet)
+    end
+  end
+
   describe ".preload" do
     before do
       Einhorn::State.preloaded = false

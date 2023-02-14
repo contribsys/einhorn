@@ -10,7 +10,6 @@ Gem::Specification.new do |gem|
 
   gem.files = ["einhorn.gemspec", "README.md", "Changes.md", "LICENSE.txt"] + `git ls-files bin lib example`.split("\n")
   gem.executables = %w[einhorn einhornsh]
-  gem.test_files = []
   gem.name = "einhorn"
   gem.require_paths = ["lib"]
   gem.required_ruby_version = ">= 2.5.0"
@@ -26,4 +25,6 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency "minitest", "~> 5"
   gem.add_development_dependency "mocha", "~> 1"
   gem.add_development_dependency "subprocess", "~> 1"
+  gem.add_development_dependency "pry"
+  gem.add_development_dependency "pry-byebug"
 end

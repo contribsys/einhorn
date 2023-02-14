@@ -63,7 +63,11 @@ arguments:
 
 Each address is specified as an ip/port pair, possibly accompanied by options:
 
-    ADDR := (IP:PORT)[<,OPT>...]
+    IP_ADDR := (IP:PORT)[<,OPT>...]
+
+or as a path to a UNIX domain socket, also possibly accompanied by options:
+
+    UNIX_ADDR := /path/to/socket[<,OPT>...]
 
 In the worker process, the opened file descriptors will be represented
 as file descriptor numbers in a series of environment variables named
