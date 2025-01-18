@@ -23,6 +23,6 @@ Gem::Specification.new do |gem|
 
   gem.add_development_dependency "rake", "~> 13"
   gem.add_development_dependency "minitest", "~> 5"
-  gem.add_development_dependency "mocha", "~> 1"
+  gem.add_development_dependency "mocha", "~> 2"
   gem.add_development_dependency "subprocess", "~> 1"
 end

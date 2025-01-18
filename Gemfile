@@ -6,4 +6,7 @@ source "https://rubygems.org/"
 # Specify your gem's dependencies in einhorn.gemspec
 gemspec
 
-gem "standard", group: [:development, :test]
+group :development, :test do
+  gem "standard"
+  gem "debug"
+end

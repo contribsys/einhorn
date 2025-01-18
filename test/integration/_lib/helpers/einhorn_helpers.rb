@@ -10,7 +10,7 @@ module Helpers
 
     def default_einhorn_command
       cmd = ["bundle", "exec"]
-      cmd << "--keep-file-descriptors" if RUBY_VERSION >= "2.0"
+      cmd << "--keep-file-descriptors"
       cmd << File.expand_path("bin/einhorn", einhorn_code_dir)
 
       cmd
@@ -125,7 +125,7 @@ module Helpers
     end
 
     def read_from_port
-      ewouldblock = (RUBY_VERSION >= "1.9.0") ? IO::WaitWritable : Errno::EINPROGRESS
+      ewouldblock = IO::WaitWritable
       socket = Socket.new(Socket::PF_INET, Socket::SOCK_STREAM, 0)
       sockaddr = Socket.pack_sockaddr_in(@port, "127.0.0.1")
       begin
