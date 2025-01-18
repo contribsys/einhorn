@@ -43,7 +43,7 @@ To set Einhorn up as a master process running 3 copies of `sleep 5`:
 You can communicate your running Einhorn process via `einhornsh`:
 
     $ einhornsh
-    Welcome gdb! You are speaking to Einhorn Master Process 11902
+    Welcome! You are speaking to Einhorn Master Process 11902
     Enter 'help' if you're not sure what to do.
 
     Type "quit" or "exit" to quit at any time

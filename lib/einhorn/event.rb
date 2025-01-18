@@ -168,7 +168,7 @@ module Einhorn
     end
 
     def self.default_timeout=(val)
-      @@default_timeout = val.to_i == 0 ? nil : val.to_i
+      @@default_timeout = (val.to_i == 0) ? nil : val.to_i
     end
 
     def self.default_timeout
