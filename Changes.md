@@ -1,3 +1,8 @@
+# 1.0.1
+
+- Add `fiddle` to gemspec dependencies [#111]
+— Minor formatting and removing dead code
+
 # 1.0.0
 
 - Use `YAML.safe_load` for compatibility with Ruby 3.1+ [#102]
