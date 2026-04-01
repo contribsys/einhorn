@@ -1,5 +1,6 @@
 # 1.1.0
 
+- Add `logger` and `readline` gem dependencies for Ruby 4.0
 - Make the `fiddle` gem dependency optional.
   This gem is only necessary if you use the `-k` flag and since
   it is native, requires libffi and a compiler to be installed.
