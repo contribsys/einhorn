@@ -233,8 +233,7 @@ if true # $0 == __FILE__
       begin
         require "fiddle"
       rescue LoadError
-        puts "Please add `gem 'fiddle'` to your Gemfile to use einhorn's -k flag"
-        exit
+        warn "Please add `gem 'fiddle'` to your Gemfile to use einhorn's -k flag"
       end
       Einhorn::State.kill_children_on_exit = true
     end
