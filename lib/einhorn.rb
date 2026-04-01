@@ -94,6 +94,7 @@ module Einhorn
 
   module TransientState
     extend AbstractState
+
     def self.default_state
       {
         whatami: :master,
@@ -307,7 +308,7 @@ module Einhorn
     end
 
     ARGV[0..-1] = cmd[idx + 1..-1]
-    log_info("Set#{set_ps_name ? " $0 = #{$0.inspect}, " : nil} ARGV = #{ARGV.inspect}")
+    log_info("Set#{" $0 = #{$0.inspect}, " if set_ps_name} ARGV = #{ARGV.inspect}")
   end
 
   def self.set_master_ps_name

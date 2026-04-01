@@ -4,6 +4,7 @@ require "fiddle/import"
 module Einhorn
   module PrctlRaw
     extend Fiddle::Importer
+
     dlload Fiddle.dlopen(nil) # libc
     extern "int prctl(int, unsigned long, unsigned long, unsigned long, unsigned long)"
 
