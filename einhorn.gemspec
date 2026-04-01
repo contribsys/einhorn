@@ -25,5 +25,6 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency "minitest", "~> 5"
   gem.add_development_dependency "mocha", "~> 2"
   gem.add_development_dependency "subprocess", "~> 1"
-  gem.add_dependency "fiddle", "~> 1.1"
+  # Fiddle is native and only needed for `-k` on Linux so we make it optional
+  # gem.add_dependency "fiddle", "~> 1.1"
 end

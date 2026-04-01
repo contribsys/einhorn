@@ -1,3 +1,10 @@
+# 1.1.0
+
+- Make the `fiddle` gem dependency optional.
+  This gem is only necessary if you use the `-k` flag and since
+  it is native, requires libffi and a compiler to be installed.
+  Add `gem "fiddle"` to your Gemfile to use the `-k` flag.
+
 # 1.0.1
 
 - Add `fiddle` to gemspec dependencies [#111]

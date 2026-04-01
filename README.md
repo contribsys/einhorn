@@ -200,7 +200,7 @@ Then you could set `--reexec-as=` to the name of your bash script and it will ru
     -f, --lockfile LOCKFILE          Where to store the Einhorn lockfile
     -g, --command-socket-as-fd       Leave the command socket open as a file descriptor, passed in the EINHORN_SOCK_FD environment variable. This allows your worker processes to ACK without needing to know where on the filesystem the command socket lives.
     -h, --help                       Display this message
-    -k, --kill-children-on-exit      If Einhorn exits unexpectedly, gracefully kill all its children
+    -k, --kill-children-on-exit      If Einhorn exits unexpectedly, gracefully kill all its children (linux only, requires the fiddle gem)
     -l, --backlog N                  Connection backlog (assuming this is a server)
     -m, --ack-mode MODE              What kinds of ACK to expect from workers. Choices: FLOAT (number of seconds until assumed alive), manual (process will speak to command socket when ready). Default is MODE=1.
     -n, --number N                   Number of copies to spin up
