@@ -15,7 +15,7 @@ module Einhorn::Event
       @socket = sock
       @client_id = "#{@@instance_counter}:#{sock.fileno}"
 
-      @read_buffer = ""
+      @read_buffer = +""
       @write_buffer = +""
 
       @closed = false
