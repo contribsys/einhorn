@@ -113,7 +113,7 @@ module Einhorn::Event
 
     # Override in subclass. This lets you do streaming reads.
     def parse_record
-      [@read_buffer, ""]
+      [@read_buffer, +""]
     end
 
     def consume_record(record)
