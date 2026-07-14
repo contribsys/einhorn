@@ -256,7 +256,13 @@ module Einhorn
           log_info("Requiring #{path} (if this hangs, make sure your code can be properly loaded as a library)", :upgrade)
           require path
 
-          force_move_to_oldgen if Einhorn::State.config[:gc_before_fork]
+          if Einhorn::State.config[:gc_before_fork]
+            if Process.respond_to?(:warmup)
+              Process.warmup
+            else
+              force_move_to_oldgen
+            end
+          end
         end
       rescue StandardError, LoadError => e
         log_info("Proceeding with postload -- could not load #{path}: #{e} (#{e.class})\n  #{e.backtrace.join("\n  ")}", :upgrade)
