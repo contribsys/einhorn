@@ -1,3 +1,8 @@
+# 1.1.1
+
+- Fix a few Ruby deprecations
+- Use `Process.warmup` with `--gc-before-fork`
+
 # 1.1.0
 
 - Add `logger` and `readline` gem dependencies for Ruby 4.0
