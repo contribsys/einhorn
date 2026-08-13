@@ -26,7 +26,7 @@ module Einhorn
       state
     end
 
-    def respond_to_missing?(name)
+    def respond_to_missing?(name, *)
       ((name.to_s =~ /(.*)=$/) && state.has_key?($1.to_sym)) ||
         state.has_key?(name) ||
         default_state.has_key?(name)
